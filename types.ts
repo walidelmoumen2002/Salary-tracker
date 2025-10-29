@@ -1,5 +1,4 @@
-
-export const CATEGORIES = [
+export const DEFAULT_CATEGORIES = [
   "Food",
   "Transport",
   "Utilities",
@@ -11,7 +10,7 @@ export const CATEGORIES = [
   "Other",
 ] as const;
 
-export type Category = typeof CATEGORIES[number];
+export type Category = string;
 
 export interface Expense {
   id: string;
@@ -19,4 +18,13 @@ export interface Expense {
   amount: number;
   category: Category;
   date: string; // ISO string format: YYYY-MM-DD
+  user_id?: string;
+}
+
+export interface FixedExpense {
+  id: string;
+  task: string;
+  amount: number;
+  is_completed: boolean;
+  user_id?: string;
 }

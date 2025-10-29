@@ -4,7 +4,8 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 type Theme = "light" | "dark";
 
 interface ThemeProviderProps {
-  children: React.ReactNode;
+  // Fix: Made children optional to resolve spurious compiler errors in App.tsx
+  children?: React.ReactNode;
   defaultTheme?: Theme;
   storageKey?: string;
 }

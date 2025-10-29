@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
-import { Expense, CATEGORIES } from '../types';
+import { Expense, Category } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { ExpenseList } from './ExpenseList';
 import { ExpenseCharts } from './ExpenseCharts';
@@ -11,6 +10,7 @@ import { Input } from './ui/Input';
 interface ExpenseDashboardProps {
   expenses: Expense[];
   deleteExpense: (id: string) => void;
+  categories: Category[];
 }
 
 const getMonthsWithExpenses = (expenses: Expense[]): string[] => {
@@ -21,7 +21,7 @@ const getMonthsWithExpenses = (expenses: Expense[]): string[] => {
   return Array.from(monthSet).sort().reverse();
 };
 
-export const ExpenseDashboard: React.FC<ExpenseDashboardProps> = ({ expenses, deleteExpense }) => {
+export const ExpenseDashboard: React.FC<ExpenseDashboardProps> = ({ expenses, deleteExpense, categories }) => {
   const availableMonths = useMemo(() => getMonthsWithExpenses(expenses), [expenses]);
   
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -83,7 +83,7 @@ export const ExpenseDashboard: React.FC<ExpenseDashboardProps> = ({ expenses, de
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {CATEGORIES.map(cat => (
+                  {categories.map(cat => (
                     <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                   ))}
                 </SelectContent>

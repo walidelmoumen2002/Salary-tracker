@@ -1,6 +1,8 @@
 
+
 import React, { useMemo } from 'react';
-import { Expense, Category, CATEGORIES } from '../types';
+// Fix: Removed non-existent 'CATEGORIES' import.
+import { Expense, Category } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, XAxis, YAxis, Bar } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 

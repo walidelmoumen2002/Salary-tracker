@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Expense, Category, CATEGORIES } from '../types';
+import { Expense, Category } from '../types';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/Select';
@@ -10,23 +9,28 @@ interface AddExpenseProps {
   isOpen: boolean;
   onClose: () => void;
   addExpense: (expense: Omit<Expense, 'id'>) => void;
+  categories: Category[];
+  addCategory: (category: Category) => void;
 }
 
-export const AddExpense: React.FC<AddExpenseProps> = ({ isOpen, onClose, addExpense }) => {
+export const AddExpense: React.FC<AddExpenseProps> = ({ isOpen, onClose, addExpense, categories, addCategory }) => {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<Category | ''>('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
     if (isOpen) {
-      // Reset form on open
       setDescription('');
       setAmount('');
       setCategory('');
       setDate(new Date().toISOString().split('T')[0]);
       setError('');
+      setIsAddingCategory(false);
+      setNewCategoryName('');
     }
   }, [isOpen]);
 
@@ -50,6 +54,25 @@ export const AddExpense: React.FC<AddExpenseProps> = ({ isOpen, onClose, addExpe
     });
     onClose();
   };
+
+  const handleCategoryChange = (value: string) => {
+      if (value === 'add-new') {
+          setIsAddingCategory(true);
+          setCategory('');
+      } else {
+          setIsAddingCategory(false);
+          setCategory(value as Category);
+      }
+  }
+
+  const handleAddNewCategory = () => {
+    if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
+        addCategory(newCategoryName.trim());
+        setCategory(newCategoryName.trim());
+        setIsAddingCategory(false);
+        setNewCategoryName('');
+    }
+  }
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -94,17 +117,29 @@ export const AddExpense: React.FC<AddExpenseProps> = ({ isOpen, onClose, addExpe
           </div>
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-foreground mb-1">Category</label>
-            <Select onValueChange={(value) => setCategory(value as Category)} value={category}>
+            <Select onValueChange={handleCategoryChange} value={category}>
                 <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                    {CATEGORIES.map(cat => (
+                    {categories.map(cat => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                     ))}
+                    <SelectItem value="add-new">+ Add New Category</SelectItem>
                 </SelectContent>
             </Select>
           </div>
+          {isAddingCategory && (
+              <div className="flex items-center gap-2">
+                  <Input 
+                      placeholder="New category name" 
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                  />
+                  <Button type="button" onClick={handleAddNewCategory}>Add</Button>
+                  <Button type="button" variant="ghost" onClick={() => setIsAddingCategory(false)}>Cancel</Button>
+              </div>
+          )}
           {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
           <div className="flex justify-end pt-2">
             <Button type="submit">Add Expense</Button>
