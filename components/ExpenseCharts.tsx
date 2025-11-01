@@ -58,11 +58,11 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({ expenses }) => {
   }
 
   return (
-    <div className="grid md:grid-cols-2 gap-8 min-w-0">
-      <div className="min-w-0">
+    <div className="grid md:grid-cols-2 gap-8">
+      <div>
         <h3 className="text-xl font-semibold mb-4 text-center">Expenses by Category</h3>
-        <div className="w-full" style={{ height: 300, minWidth: 0 }}>
-          <ResponsiveContainer width="100%" height={300} minWidth={0}>
+        <div style={{ width: '100%', height: 300 }}>
+          <ResponsiveContainer>
             <PieChart>
               <Pie
                 data={dataByCategory}
@@ -91,10 +91,10 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({ expenses }) => {
           </ResponsiveContainer>
         </div>
       </div>
-       <div className="min-w-0">
+       <div>
         <h3 className="text-xl font-semibold mb-4 text-center">Monthly Expense Trend</h3>
-        <div className="w-full" style={{ height: 300, minWidth: 0 }}>
-          <ResponsiveContainer width="100%" height={300} minWidth={0}>
+        <div style={{ width: '100%', height: 300 }}>
+          <ResponsiveContainer>
             <BarChart data={dataByMonth}>
               <XAxis dataKey="name" stroke={tickColor}/>
               <YAxis stroke={tickColor}/>
@@ -114,4 +114,4 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({ expenses }) => {
       </div>
     </div>
   );
-}; 
+};

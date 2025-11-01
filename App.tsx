@@ -12,7 +12,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { FixedExpenses } from './components/FixedExpenses';
 
 const Plus: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14"/><path d="M12 5v14"/></svg>
 );
 
 type Page = 'dashboard' | 'fixedExpenses';
@@ -47,11 +47,11 @@ const App: React.FC = () => {
 
   const fetchData = useCallback(async (user: User) => {
     // Fetch Salary
-    const { data: profile } = await supabase.from('profiles').select('salary').eq('id', user.id).maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('salary').eq('id', user.id).single();
     if (profile) setSalary(profile.salary);
 
     // Fetch Expenses
-    const { data: expensesData } = await supabase.from('expenses').select('*').eq('user_id', user.id);
+    const { data: expensesData } = await supabase.from('expense').select('*').eq('user_id', user.id);
     if (expensesData) setExpenses(expensesData.map(e => ({...e, id: e.id.toString() })));
 
     // Fetch Categories
@@ -81,7 +81,7 @@ const App: React.FC = () => {
 
   const addExpense = useCallback(async (expense: Omit<Expense, 'id'>) => {
     if (!user) return;
-    const { data, error } = await supabase.from('expenses').insert([{ ...expense, user_id: user.id }]).select();
+    const { data, error } = await supabase.from('expense').insert([{ ...expense, user_id: user.id }]).select();
     if (data) {
       setExpenses(prev => [...prev, { ...data[0], id: data[0].id.toString() }]);
     }
@@ -89,7 +89,7 @@ const App: React.FC = () => {
   }, [user]);
 
   const deleteExpense = useCallback(async (id: string) => {
-    const { error } = await supabase.from('expenses').delete().match({ id });
+    const { error } = await supabase.from('expense').delete().match({ id });
     if (!error) {
       setExpenses(prev => prev.filter(expense => expense.id !== id));
     } else {
