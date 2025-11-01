@@ -47,11 +47,11 @@ const App: React.FC = () => {
 
   const fetchData = useCallback(async (user: User) => {
     // Fetch Salary
-    const { data: profile } = await supabase.from('profiles').select('salary').eq('id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('salary').eq('id', user.id).maybeSingle();
     if (profile) setSalary(profile.salary);
 
     // Fetch Expenses
-    const { data: expensesData } = await supabase.from('expense').select('*').eq('user_id', user.id);
+    const { data: expensesData } = await supabase.from('expenses').select('*').eq('user_id', user.id);
     if (expensesData) setExpenses(expensesData.map(e => ({...e, id: e.id.toString() })));
 
     // Fetch Categories
@@ -81,7 +81,7 @@ const App: React.FC = () => {
 
   const addExpense = useCallback(async (expense: Omit<Expense, 'id'>) => {
     if (!user) return;
-    const { data, error } = await supabase.from('expense').insert([{ ...expense, user_id: user.id }]).select();
+    const { data, error } = await supabase.from('expenses').insert([{ ...expense, user_id: user.id }]).select();
     if (data) {
       setExpenses(prev => [...prev, { ...data[0], id: data[0].id.toString() }]);
     }
@@ -89,7 +89,7 @@ const App: React.FC = () => {
   }, [user]);
 
   const deleteExpense = useCallback(async (id: string) => {
-    const { error } = await supabase.from('expense').delete().match({ id });
+    const { error } = await supabase.from('expenses').delete().match({ id });
     if (!error) {
       setExpenses(prev => prev.filter(expense => expense.id !== id));
     } else {
