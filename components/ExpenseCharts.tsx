@@ -114,4 +114,4 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({ expenses }) => {
       </div>
     </div>
   );
-};
+}; 
