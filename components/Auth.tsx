@@ -1,62 +1,60 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
+import { getErrorMessage } from '../lib/utils';
+
+type AuthView = 'sign_in' | 'sign_up' | 'forgot_password';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
+  const [view, setView] = useState<AuthView>('sign_in');
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   const handleAuth = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    setMessage(null);
 
     try {
-      if (isLogin) {
+      if (view === 'sign_in') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-      } else {
+      } else if (view === 'sign_up') {
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            // This is where we can set initial data for a new user.
-            // A Supabase Function (e.g., on user creation trigger) is needed to populate the 'profiles' table.
-            // For example, create a function that inserts a new row into `profiles` with the new user's ID and a default salary.
-            // The function would look something like this:
-            //
-            // CREATE OR REPLACE FUNCTION public.handle_new_user()
-            // RETURNS trigger
-            // LANGUAGE plpgsql
-            // SECURITY DEFINER SET search_path = public
-            // AS $$
-            // BEGIN
-            //   INSERT INTO public.profiles (id, salary)
-            //   VALUES (new.id, 7000);
-            //   RETURN new;
-            // END;
-            // $$;
-            //
-            // And a trigger:
-            //
-            // CREATE TRIGGER on_auth_user_created
-            // AFTER INSERT ON auth.users
-            // FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
-
+            // Additional user metadata or redirect options can be added here
           }
         });
         if (error) throw error;
-        alert('Check your email for the confirmation link!');
+        setMessage('Check your email for the confirmation link!');
+      } else if (view === 'forgot_password') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.href,
+        });
+        if (error) throw error;
+        setMessage('Check your email for the password reset link!');
       }
     } catch (error: any) {
-      setError(error.error_description || error.message);
+      setError(getErrorMessage(error));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getTitle = () => {
+    switch (view) {
+      case 'sign_in': return 'Sign In';
+      case 'sign_up': return 'Sign Up';
+      case 'forgot_password': return 'Reset Password';
     }
   };
 
@@ -64,35 +62,103 @@ const Auth: React.FC = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">{isLogin ? 'Sign In' : 'Sign Up'}</CardTitle>
+          <CardTitle className="text-2xl text-center">{getTitle()}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="text-sm font-medium" htmlFor="email">Email</label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+              <Input 
+                id="email" 
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+                placeholder="you@example.com" 
+              />
             </div>
-            <div>
-              <label className="text-sm font-medium" htmlFor="password">Password</label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
-            </div>
+            
+            {view !== 'forgot_password' && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium" htmlFor="password">Password</label>
+                  {view === 'sign_in' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setView('forgot_password');
+                        setError(null);
+                        setMessage(null);
+                      }}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required 
+                  placeholder="••••••••" 
+                />
+              </div>
+            )}
+
             <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
+              {loading 
+                ? 'Loading...' 
+                : (view === 'sign_in' ? 'Sign In' : view === 'sign_up' ? 'Sign Up' : 'Send Reset Link')}
             </Button>
+            
             {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+            {message && <p className="text-sm text-green-500 text-center">{message}</p>}
           </form>
-          <div className="mt-4 text-center text-sm">
-            <a
-              onClick={(e) => {
-                e.preventDefault();
-                setIsLogin(!isLogin);
-                setError(null);
-              }}
-              href="#"
-              className="text-muted-foreground hover:text-primary"
-            >
-              {isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
-            </a>
+          
+          <div className="mt-4 text-center text-sm space-y-2">
+            {view === 'sign_in' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setView('sign_up');
+                  setError(null);
+                  setMessage(null);
+                }}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                Don't have an account? Sign Up
+              </button>
+            )}
+            
+            {view === 'sign_up' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setView('sign_in');
+                  setError(null);
+                  setMessage(null);
+                }}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                Already have an account? Sign In
+              </button>
+            )}
+
+            {view === 'forgot_password' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setView('sign_in');
+                  setError(null);
+                  setMessage(null);
+                }}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                Back to Sign In
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>

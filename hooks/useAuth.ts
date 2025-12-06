@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
@@ -8,8 +9,13 @@ export function useAuth() {
 
     React.useEffect(() => {
       const fetchUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
+        try {
+            const { data: { user }, error } = await supabase.auth.getUser();
+            if (error) throw error;
+            setUser(user);
+        } catch (e) {
+             console.error("Error fetching user in hook:", e);
+        }
       }
       fetchUser();
 

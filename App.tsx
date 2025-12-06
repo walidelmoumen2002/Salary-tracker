@@ -8,11 +8,18 @@ import { ExpenseDashboard } from './components/ExpenseDashboard';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { supabase } from './lib/supabase';
 import Auth from './components/Auth';
+import { UpdatePassword } from './components/UpdatePassword';
 import type { Session, User } from '@supabase/supabase-js';
 import { FixedExpenses } from './components/FixedExpenses';
+import { getErrorMessage } from './lib/utils';
+import { Button } from './components/ui/Button';
 
 const Plus: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+);
+
+const X: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 );
 
 type Page = 'dashboard' | 'fixedExpenses';
@@ -26,46 +33,80 @@ const App: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([...DEFAULT_CATEGORIES]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [globalError, setGlobalError] = useState<string | null>(null);
+
+  const handleGlobalError = useCallback((error: any) => {
+    console.error("Global Error:", error);
+    const msg = getErrorMessage(error);
+    setGlobalError(msg);
+    
+    // Auto-dismiss error after 5 seconds only if it's NOT a connection error
+    if (!msg.includes("Unable to connect")) {
+        setTimeout(() => setGlobalError(null), 5000);
+    }
+  }, []);
 
   useEffect(() => {
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (error) {
+        // We generally don't show an alert for getSession failure unless it's a network error
+        console.error("Error getting session:", error);
+        if ((error as any).message === "Failed to fetch") {
+             handleGlobalError(error);
+        }
+      } finally {
+        setLoading(false);
+      }
     };
     getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsUpdatePasswordOpen(true);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [handleGlobalError]);
 
   const fetchData = useCallback(async (user: User) => {
-    // Fetch Salary
-    const { data: profile } = await supabase.from('profiles').select('salary').eq('id', user.id).single();
-    if (profile) setSalary(profile.salary);
+    setGlobalError(null);
+    try {
+      // Fetch Salary
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('salary').eq('id', user.id).single();
+      if (profileError && profileError.code !== 'PGRST116') throw profileError; // PGRST116 is "Row not found" which is fine initially
+      if (profile) setSalary(profile.salary);
 
-    // Fetch Expenses
-    const { data: expensesData } = await supabase.from('expense').select('*').eq('user_id', user.id);
-    if (expensesData) setExpenses(expensesData.map(e => ({...e, id: e.id.toString() })));
+      // Fetch Expenses
+      const { data: expensesData, error: expensesError } = await supabase.from('expense').select('*').eq('user_id', user.id);
+      if (expensesError) throw expensesError;
+      if (expensesData) setExpenses(expensesData.map(e => ({...e, id: e.id.toString() })));
 
-    // Fetch Categories
-    const { data: categoriesData } = await supabase.from('categories').select('name').eq('user_id', user.id);
-    if (categoriesData) {
-      const userCategories = categoriesData.map(c => c.name);
-      setCategories([...new Set([...DEFAULT_CATEGORIES, ...userCategories])]);
+      // Fetch Categories
+      const { data: categoriesData, error: categoriesError } = await supabase.from('categories').select('name').eq('user_id', user.id);
+      if (categoriesError) throw categoriesError;
+      if (categoriesData) {
+        const userCategories = categoriesData.map(c => c.name);
+        setCategories([...new Set([...DEFAULT_CATEGORIES, ...userCategories])]);
+      }
+
+      // Fetch Fixed Expenses
+      const { data: fixedExpensesData, error: fixedError } = await supabase.from('fixed_expenses').select('*').eq('user_id', user.id);
+      if (fixedError) throw fixedError;
+      if (fixedExpensesData) setFixedExpenses(fixedExpensesData.map(e => ({...e, id: e.id.toString() })));
+    } catch (error) {
+      handleGlobalError(error);
     }
-
-    // Fetch Fixed Expenses
-    const { data: fixedExpensesData } = await supabase.from('fixed_expenses').select('*').eq('user_id', user.id);
-    if (fixedExpensesData) setFixedExpenses(fixedExpensesData.map(e => ({...e, id: e.id.toString() })));
-
-  }, []);
+  }, [handleGlobalError]);
 
   useEffect(() => {
     if (user) {
@@ -81,41 +122,49 @@ const App: React.FC = () => {
 
   const addExpense = useCallback(async (expense: Omit<Expense, 'id'>) => {
     if (!user) return;
-    const { data, error } = await supabase.from('expense').insert([{ ...expense, user_id: user.id }]).select();
-    if (data) {
-      setExpenses(prev => [...prev, { ...data[0], id: data[0].id.toString() }]);
+    try {
+        const { data, error } = await supabase.from('expense').insert([{ ...expense, user_id: user.id }]).select();
+        if (error) throw error;
+        if (data) {
+          setExpenses(prev => [...prev, { ...data[0], id: data[0].id.toString() }]);
+        }
+    } catch (error) {
+        handleGlobalError(error);
     }
-    if (error) console.error("Error adding expense:", error);
-  }, [user]);
+  }, [user, handleGlobalError]);
 
   const deleteExpense = useCallback(async (id: string) => {
-    const { error } = await supabase.from('expense').delete().match({ id });
-    if (!error) {
-      setExpenses(prev => prev.filter(expense => expense.id !== id));
-    } else {
-      console.error("Error deleting expense:", error);
+    try {
+        const { error } = await supabase.from('expense').delete().match({ id });
+        if (error) throw error;
+        setExpenses(prev => prev.filter(expense => expense.id !== id));
+    } catch (error) {
+        handleGlobalError(error);
     }
-  }, []);
+  }, [handleGlobalError]);
 
   const updateSalary = useCallback(async (newSalary: number) => {
     if (!user) return;
-    const { error } = await supabase.from('profiles').update({ salary: newSalary }).eq('id', user.id);
-    if (!error) {
-      setSalary(newSalary);
-    } else {
-      console.error("Error updating salary:", error);
+    try {
+        // Upsert salary
+        const { error } = await supabase.from('profiles').upsert({ id: user.id, salary: newSalary });
+        if (error) throw error;
+        setSalary(newSalary);
+    } catch (error) {
+        handleGlobalError(error);
     }
-  }, [user]);
+  }, [user, handleGlobalError]);
 
   const addCategory = useCallback(async (category: Category) => {
     if (!user || categories.includes(category)) return;
-    const { error } = await supabase.from('categories').insert([{ name: category, user_id: user.id }]);
-    if (!error) {
+    try {
+        const { error } = await supabase.from('categories').insert([{ name: category, user_id: user.id }]);
+        if (error) throw error;
         setCategories(prev => [...prev, category]);
-    } else {
-        console.error("Error adding category", error);
+    } catch (error) {
+        handleGlobalError(error);
     }
-  }, [user, categories]);
+  }, [user, categories, handleGlobalError]);
   
   const totalExpenses = useMemo(() => {
     return expenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -145,6 +194,29 @@ const App: React.FC = () => {
           setCurrentPage={setCurrentPage}
           />
 
+        {globalError && (
+            <div className="bg-destructive/15 text-destructive px-4 py-3 text-center text-sm font-medium border-b border-destructive/20 animate-in slide-in-from-top flex flex-col sm:flex-row items-center justify-center gap-2 relative">
+                <p>{globalError}</p>
+                {globalError.includes("Unable to connect") && user && (
+                   <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => fetchData(user)} 
+                        className="h-7 px-3 border-destructive/30 hover:bg-destructive/20 bg-transparent text-destructive hover:text-destructive text-xs"
+                    >
+                      Retry
+                   </Button>
+                )}
+                <button 
+                    onClick={() => setGlobalError(null)} 
+                    className="sm:absolute sm:right-4 p-1 hover:bg-destructive/20 rounded-full transition-colors" 
+                    aria-label="Dismiss error"
+                >
+                   <X className="h-4 w-4" />
+                </button>
+            </div>
+        )}
+
         <main className="container mx-auto p-4 md:p-8 space-y-8">
           {currentPage === 'dashboard' ? (
             <>
@@ -156,7 +228,7 @@ const App: React.FC = () => {
               <ExpenseDashboard expenses={expenses} deleteExpense={deleteExpense} categories={categories}/>
             </>
           ) : (
-            <FixedExpenses initialFixedExpenses={fixedExpenses} />
+            <FixedExpenses initialFixedExpenses={fixedExpenses} user={user} />
           )}
         </main>
 
@@ -178,6 +250,11 @@ const App: React.FC = () => {
           addExpense={addExpense}
           categories={categories}
           addCategory={addCategory}
+        />
+        
+        <UpdatePassword
+          isOpen={isUpdatePasswordOpen}
+          onClose={() => setIsUpdatePasswordOpen(false)}
         />
       </div>
     </ThemeProvider>
