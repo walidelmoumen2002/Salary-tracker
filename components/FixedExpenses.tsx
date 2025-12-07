@@ -8,8 +8,21 @@ import { Button } from './ui/Button';
 import { formatCurrency, getErrorMessage } from '../lib/utils';
 import type { User } from '@supabase/supabase-js';
 
-const Trash2: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+const TrashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+    >
+        <path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.02.166m-1.02-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.338-.059.678-.114 1.02-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+    </svg>
 );
 
 interface FixedExpensesProps {
@@ -50,10 +63,10 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                 .insert({ task: newTask.trim(), amount: amountValue, user_id: user.id, is_completed: false })
                 .select()
                 .single();
-            
+
             if (error) throw error;
             if (data) {
-                setFixedExpenses(prev => [...prev, {...data, id: data.id.toString()}]);
+                setFixedExpenses(prev => [...prev, { ...data, id: data.id.toString() }]);
                 setNewTask('');
                 setNewAmount('');
             }
@@ -69,9 +82,9 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                 .from('fixed_expenses')
                 .update({ is_completed: !is_completed })
                 .match({ id });
-            
+
             if (error) throw error;
-            setFixedExpenses(prev => prev.map(task => 
+            setFixedExpenses(prev => prev.map(task =>
                 task.id === id ? { ...task, is_completed: !is_completed } : task
             ));
         } catch (err) {
@@ -86,14 +99,14 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                 .from('fixed_expenses')
                 .delete()
                 .match({ id });
-            
+
             if (error) throw error;
             setFixedExpenses(prev => prev.filter(task => task.id !== id));
         } catch (err) {
             handleError(err);
         }
     };
-    
+
     return (
         <Card>
             <CardHeader>
@@ -103,15 +116,15 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                         <p className="text-muted-foreground text-sm pt-1">Track your recurring bills and subscriptions.</p>
                     </div>
                     <div className="text-right">
-                         <p className="text-sm font-medium text-muted-foreground">Total</p>
-                         <p className="text-lg font-bold">{formatCurrency(totalAmount)}</p>
-                         <p className="text-xs text-green-500">{formatCurrency(paidAmount)} paid</p>
+                        <p className="text-sm font-medium text-muted-foreground">Total</p>
+                        <p className="text-lg font-bold">{formatCurrency(totalAmount)}</p>
+                        <p className="text-xs text-green-500">{formatCurrency(paidAmount)} paid</p>
                     </div>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="flex gap-2 mb-2">
-                    <Input 
+                    <Input
                         placeholder="e.g., Rent, Netflix"
                         value={newTask}
                         onChange={(e) => setNewTask(e.target.value)}
@@ -129,7 +142,7 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                     />
                     <Button onClick={addTask}>Add</Button>
                 </div>
-                
+
                 {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
                 {fixedExpenses.length === 0 ? (
@@ -142,7 +155,7 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                         {fixedExpenses.map(task => (
                             <li key={task.id} className="p-4 flex items-center justify-between hover:bg-secondary/50">
                                 <div className="flex items-center gap-4">
-                                    <input 
+                                    <input
                                         type="checkbox"
                                         checked={task.is_completed}
                                         onChange={() => toggleTask(task.id, task.is_completed)}
@@ -153,11 +166,11 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                     <span className={`font-semibold ${task.is_completed ? 'text-muted-foreground line-through' : ''}`}>
+                                    <span className={`font-semibold ${task.is_completed ? 'text-muted-foreground line-through' : ''}`}>
                                         {formatCurrency(task.amount)}
                                     </span>
                                     <Button variant="ghost" size="icon" onClick={() => deleteTask(task.id)}>
-                                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                        <TrashIcon className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                                     </Button>
                                 </div>
                             </li>

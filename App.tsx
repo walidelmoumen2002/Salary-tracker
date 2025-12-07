@@ -15,11 +15,26 @@ import { getErrorMessage } from './lib/utils';
 import { Button } from './components/ui/Button';
 
 const Plus: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v8" />
+    <path d="M8 12h8" />
+  </svg>
 );
 
 const X: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
 );
 
 type Page = 'dashboard' | 'fixedExpenses';
@@ -36,15 +51,16 @@ const App: React.FC = () => {
   const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleGlobalError = useCallback((error: any) => {
     console.error("Global Error:", error);
     const msg = getErrorMessage(error);
     setGlobalError(msg);
-    
+
     // Auto-dismiss error after 5 seconds only if it's NOT a connection error
     if (!msg.includes("Unable to connect")) {
-        setTimeout(() => setGlobalError(null), 5000);
+      setTimeout(() => setGlobalError(null), 5000);
     }
   }, []);
 
@@ -59,7 +75,7 @@ const App: React.FC = () => {
         // We generally don't show an alert for getSession failure unless it's a network error
         console.error("Error getting session:", error);
         if ((error as any).message === "Failed to fetch") {
-             handleGlobalError(error);
+          handleGlobalError(error);
         }
       } finally {
         setLoading(false);
@@ -89,7 +105,7 @@ const App: React.FC = () => {
       // Fetch Expenses
       const { data: expensesData, error: expensesError } = await supabase.from('expenses').select('*').eq('user_id', user.id);
       if (expensesError) throw expensesError;
-      if (expensesData) setExpenses(expensesData.map(e => ({...e, id: e.id.toString() })));
+      if (expensesData) setExpenses(expensesData.map(e => ({ ...e, id: e.id.toString() })));
 
       // Fetch Categories
       const { data: categoriesData, error: categoriesError } = await supabase.from('categories').select('name').eq('user_id', user.id);
@@ -102,7 +118,7 @@ const App: React.FC = () => {
       // Fetch Fixed Expenses
       const { data: fixedExpensesData, error: fixedError } = await supabase.from('fixed_expenses').select('*').eq('user_id', user.id);
       if (fixedError) throw fixedError;
-      if (fixedExpensesData) setFixedExpenses(fixedExpensesData.map(e => ({...e, id: e.id.toString() })));
+      if (fixedExpensesData) setFixedExpenses(fixedExpensesData.map(e => ({ ...e, id: e.id.toString() })));
     } catch (error) {
       handleGlobalError(error);
     }
@@ -123,49 +139,49 @@ const App: React.FC = () => {
   const addExpense = useCallback(async (expense: Omit<Expense, 'id'>) => {
     if (!user) return;
     try {
-        const { data, error } = await supabase.from('expenses').insert([{ ...expense, user_id: user.id }]).select();
-        if (error) throw error;
-        if (data) {
-          setExpenses(prev => [...prev, { ...data[0], id: data[0].id.toString() }]);
-        }
+      const { data, error } = await supabase.from('expenses').insert([{ ...expense, user_id: user.id }]).select();
+      if (error) throw error;
+      if (data) {
+        setExpenses(prev => [...prev, { ...data[0], id: data[0].id.toString() }]);
+      }
     } catch (error) {
-        handleGlobalError(error);
+      handleGlobalError(error);
     }
   }, [user, handleGlobalError]);
 
   const deleteExpense = useCallback(async (id: string) => {
     try {
-        const { error } = await supabase.from('expenses').delete().match({ id });
-        if (error) throw error;
-        setExpenses(prev => prev.filter(expense => expense.id !== id));
+      const { error } = await supabase.from('expenses').delete().match({ id });
+      if (error) throw error;
+      setExpenses(prev => prev.filter(expense => expense.id !== id));
     } catch (error) {
-        handleGlobalError(error);
+      handleGlobalError(error);
     }
   }, [handleGlobalError]);
 
   const updateSalary = useCallback(async (newSalary: number) => {
     if (!user) return;
     try {
-        // Upsert salary
-        const { error } = await supabase.from('profiles').upsert({ id: user.id, salary: newSalary });
-        if (error) throw error;
-        setSalary(newSalary);
+      // Upsert salary
+      const { error } = await supabase.from('profiles').upsert({ id: user.id, salary: newSalary });
+      if (error) throw error;
+      setSalary(newSalary);
     } catch (error) {
-        handleGlobalError(error);
+      handleGlobalError(error);
     }
   }, [user, handleGlobalError]);
 
   const addCategory = useCallback(async (category: Category) => {
     if (!user || categories.includes(category)) return;
     try {
-        const { error } = await supabase.from('categories').insert([{ name: category, user_id: user.id }]);
-        if (error) throw error;
-        setCategories(prev => [...prev, category]);
+      const { error } = await supabase.from('categories').insert([{ name: category, user_id: user.id }]);
+      if (error) throw error;
+      setCategories(prev => [...prev, category]);
     } catch (error) {
-        handleGlobalError(error);
+      handleGlobalError(error);
     }
   }, [user, categories, handleGlobalError]);
-  
+
   const totalExpenses = useMemo(() => {
     return expenses.reduce((sum, expense) => sum + expense.amount, 0);
   }, [expenses]);
@@ -173,14 +189,14 @@ const App: React.FC = () => {
   const remainingBalance = useMemo(() => salary - totalExpenses, [salary, totalExpenses]);
 
   if (loading) {
-      return <div className="min-h-screen bg-background flex items-center justify-center"><p>Loading...</p></div>;
+    return <div className="min-h-screen bg-background flex items-center justify-center"><p>Loading...</p></div>;
   }
 
   if (!session) {
     return (
-        <ThemeProvider defaultTheme="dark" storageKey="salary-tracker-theme">
-            <Auth />
-        </ThemeProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="salary-tracker-theme">
+        <Auth />
+      </ThemeProvider>
     )
   }
 
@@ -192,29 +208,30 @@ const App: React.FC = () => {
           setSalary={updateSalary} 
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
+          onMenuOpenChange={setIsMobileMenuOpen}
           />
 
         {globalError && (
-            <div className="bg-destructive/15 text-destructive px-4 py-3 text-center text-sm font-medium border-b border-destructive/20 animate-in slide-in-from-top flex flex-col sm:flex-row items-center justify-center gap-2 relative">
-                <p>{globalError}</p>
-                {globalError.includes("Unable to connect") && user && (
-                   <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => fetchData(user)} 
-                        className="h-7 px-3 border-destructive/30 hover:bg-destructive/20 bg-transparent text-destructive hover:text-destructive text-xs"
-                    >
-                      Retry
-                   </Button>
-                )}
-                <button 
-                    onClick={() => setGlobalError(null)} 
-                    className="sm:absolute sm:right-4 p-1 hover:bg-destructive/20 rounded-full transition-colors" 
-                    aria-label="Dismiss error"
-                >
-                   <X className="h-4 w-4" />
-                </button>
-            </div>
+          <div className="bg-destructive/15 text-destructive px-4 py-3 text-center text-sm font-medium border-b border-destructive/20 animate-in slide-in-from-top flex flex-col sm:flex-row items-center justify-center gap-2 relative">
+            <p>{globalError}</p>
+            {globalError.includes("Unable to connect") && user && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchData(user)}
+                className="h-7 px-3 border-destructive/30 hover:bg-destructive/20 bg-transparent text-destructive hover:text-destructive text-xs"
+              >
+                Retry
+              </Button>
+            )}
+            <button
+              onClick={() => setGlobalError(null)}
+              className="sm:absolute sm:right-4 p-1 hover:bg-destructive/20 rounded-full transition-colors"
+              aria-label="Dismiss error"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         )}
 
         <main className="container mx-auto p-4 md:p-8 space-y-8">
@@ -225,15 +242,15 @@ const App: React.FC = () => {
                 totalExpenses={totalExpenses}
                 remainingBalance={remainingBalance}
               />
-              <ExpenseDashboard expenses={expenses} deleteExpense={deleteExpense} categories={categories}/>
+              <ExpenseDashboard expenses={expenses} deleteExpense={deleteExpense} categories={categories} />
             </>
           ) : (
             <FixedExpenses initialFixedExpenses={fixedExpenses} user={user} />
           )}
         </main>
 
-        {currentPage === 'dashboard' && (
-          <div className="fixed bottom-6 right-6 z-50">
+        {currentPage === 'dashboard' && !isMobileMenuOpen && (
+          <div className="fixed bottom-6 right-10 z-50">
             <button
               onClick={() => setIsAddExpenseOpen(true)}
               className="bg-primary text-primary-foreground h-16 w-16 rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -244,14 +261,14 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <AddExpense 
+        <AddExpense
           isOpen={isAddExpenseOpen}
           onClose={() => setIsAddExpenseOpen(false)}
           addExpense={addExpense}
           categories={categories}
           addCategory={addCategory}
         />
-        
+
         <UpdatePassword
           isOpen={isUpdatePasswordOpen}
           onClose={() => setIsUpdatePasswordOpen(false)}

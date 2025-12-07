@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { formatCurrency } from '../lib/utils';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
@@ -12,21 +12,40 @@ interface HeaderProps {
   setSalary: (salary: number) => void;
   currentPage: 'dashboard' | 'fixedExpenses';
   setCurrentPage: (page: 'dashboard' | 'fixedExpenses') => void;
+  onMenuOpenChange?: (open: boolean) => void;
 }
 
 const MenuIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
 );
 
 const XIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 );
 
 
-export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, setCurrentPage }) => {
+export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, setCurrentPage, onMenuOpenChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newSalary, setNewSalary] = useState(salary.toString());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const setMenuOpen = (open: boolean) => {
+    setIsMenuOpen(open);
+    onMenuOpenChange?.(open);
+  };
+
+  // Prevent background scroll when mobile menu is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = originalOverflow || '';
+    }
+    return () => {
+      document.body.style.overflow = originalOverflow || '';
+    };
+  }, [isMenuOpen]);
 
   const handleSave = () => {
     const salaryValue = parseFloat(newSalary);
@@ -89,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
             <ThemeToggle />
           </div>
           <div className="md:hidden">
-              <Button onClick={() => setIsMenuOpen(true)} variant="ghost" size="icon">
+              <Button onClick={() => setMenuOpen(true)} variant="ghost" size="icon">
                   <MenuIcon className="h-6 w-6" />
               </Button>
           </div>
@@ -97,22 +116,26 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
       </header>
       
       {isMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-background md:hidden"
-             onClick={() => setIsMenuOpen(false)}>
-            <div className="absolute top-0 right-0 bottom-0 h-full w-full max-w-sm bg-card border-l p-4 flex flex-col"
-                 onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden animate-in fade-in duration-200 overflow-hidden"
+          onClick={() => setMenuOpen(false)}
+        >
+            <div 
+              className="absolute top-0 right-0 bottom-0 h-full w-full max-w-sm bg-card border-l p-4 flex flex-col animate-in slide-in-from-right duration-300"
+              onClick={e => e.stopPropagation()}
+            >
                 <div className="flex justify-between items-center mb-8">
                     <h2 className="text-xl font-bold">Menu</h2>
-                    <Button onClick={() => setIsMenuOpen(false)} variant="ghost" size="icon">
+                    <Button onClick={() => setMenuOpen(false)} variant="ghost" size="icon">
                         <XIcon className="h-6 w-6" />
                     </Button>
                 </div>
 
                 <nav className="flex flex-col space-y-2 mb-8">
-                    <a onClick={() => { setCurrentPage('dashboard'); setIsMenuOpen(false); }} className={mobileNavItemClasses('dashboard')}>
+                    <a onClick={() => { setCurrentPage('dashboard'); setMenuOpen(false); }} className={mobileNavItemClasses('dashboard')}>
                         Dashboard
                     </a>
-                    <a onClick={() => { setCurrentPage('fixedExpenses'); setIsMenuOpen(false); }} className={mobileNavItemClasses('fixedExpenses')}>
+                    <a onClick={() => { setCurrentPage('fixedExpenses'); setMenuOpen(false); }} className={mobileNavItemClasses('fixedExpenses')}>
                         Fixed Expenses
                     </a>
                 </nav>
