@@ -59,10 +59,21 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
   const [isEditing, setIsEditing] = useState(false);
   const [newSalary, setNewSalary] = useState(salary.toString());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuClosing, setIsMenuClosing] = useState(false);
 
   const setMenuOpen = (open: boolean) => {
-    setIsMenuOpen(open);
-    onMenuOpenChange?.(open);
+    if (open) {
+      setIsMenuOpen(true);
+      setIsMenuClosing(false);
+      onMenuOpenChange?.(true);
+    } else {
+      setIsMenuClosing(true);
+      setTimeout(() => {
+        setIsMenuOpen(false);
+        setIsMenuClosing(false);
+        onMenuOpenChange?.(false);
+      }, 300);
+    }
   };
 
   // Prevent background scroll when mobile menu is open
@@ -149,11 +160,17 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div
-          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden animate-in fade-in duration-200 overflow-hidden"
+          className={cn(
+            "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden overflow-hidden transition-opacity duration-300",
+            isMenuClosing ? "opacity-0" : "opacity-100"
+          )}
           onClick={() => setMenuOpen(false)}
         >
             <div
-              className="absolute top-0 right-0 bottom-0 h-full w-full max-w-sm bg-card border-l p-4 flex flex-col animate-in slide-in-from-right duration-300"
+              className={cn(
+                "absolute top-0 right-0 bottom-0 h-full w-full max-w-sm bg-card border-l p-4 flex flex-col overflow-y-auto transition-transform duration-300",
+                isMenuClosing ? "translate-x-full" : "translate-x-0"
+              )}
               onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-6">
@@ -176,7 +193,7 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
                     ))}
                 </nav>
 
-                <div className="mt-auto space-y-4 border-t pt-4">
+                <div className="mt-auto space-y-4 border-t pt-4 pb-20">
                     {currentPage === 'dashboard' && (
                         <div className="space-y-2">
                             <h3 className="text-sm font-medium text-muted-foreground px-1">Monthly Salary</h3>

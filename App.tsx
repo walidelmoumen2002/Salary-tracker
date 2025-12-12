@@ -185,8 +185,23 @@ const App: React.FC = () => {
   const updateSalary = useCallback(async (newSalary: number) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from('profiles').upsert({ id: user.id, salary: newSalary });
-      if (error) throw error;
+      // Try to update existing profile first
+      const { data, error: updateError } = await supabase
+        .from('profiles')
+        .update({ salary: newSalary })
+        .eq('id', user.id)
+        .select();
+
+      // If no row was updated (profile doesn't exist), insert it
+      if (!updateError && (!data || data.length === 0)) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: user.id, salary: newSalary });
+        if (insertError) throw insertError;
+      } else if (updateError) {
+        throw updateError;
+      }
+
       setSalary(newSalary);
     } catch (error) {
       handleGlobalError(error);

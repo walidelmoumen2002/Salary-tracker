@@ -38,7 +38,7 @@ const Auth: React.FC = () => {
         setMessage('Check your email for the confirmation link!');
       } else if (view === 'forgot_password') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.href,
+          redirectTo: window.location.origin,
         });
         if (error) throw error;
         setMessage('Check your email for the password reset link!');
