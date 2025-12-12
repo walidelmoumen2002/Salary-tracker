@@ -1,16 +1,21 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Expense, Category, FixedExpense, DEFAULT_CATEGORIES } from './types';
+import { Expense, Category, FixedExpense, DEFAULT_CATEGORIES, Debt, SavingsGoal } from './types';
 import { Header } from './components/Header';
 import { SummaryCards } from './components/SummaryCards';
 import { AddExpense } from './components/AddExpense';
 import { ExpenseDashboard } from './components/ExpenseDashboard';
+import { ExpenseCharts } from './components/ExpenseCharts';
+import { ExpenseList } from './components/ExpenseList';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { supabase } from './lib/supabase';
 import Auth from './components/Auth';
 import { UpdatePassword } from './components/UpdatePassword';
 import type { Session, User } from '@supabase/supabase-js';
 import { FixedExpenses } from './components/FixedExpenses';
+import { DebtManager } from './components/DebtManager';
+import { SavingsGoals } from './components/SavingsGoals';
+import { MobileNav, Page } from './components/Nav';
 import { getErrorMessage } from './lib/utils';
 import { Button } from './components/ui/Button';
 
@@ -37,8 +42,6 @@ const X: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
 );
 
-type Page = 'dashboard' | 'fixedExpenses';
-
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -47,6 +50,8 @@ const App: React.FC = () => {
   const [salary, setSalary] = useState<number>(7000);
   const [categories, setCategories] = useState<Category[]>([...DEFAULT_CATEGORIES]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
@@ -72,7 +77,6 @@ const App: React.FC = () => {
         setSession(session);
         setUser(session?.user ?? null);
       } catch (error) {
-        // We generally don't show an alert for getSession failure unless it's a network error
         console.error("Error getting session:", error);
         if ((error as any).message === "Failed to fetch") {
           handleGlobalError(error);
@@ -98,9 +102,11 @@ const App: React.FC = () => {
     setGlobalError(null);
     try {
       // Fetch Salary
-      const { data: profile, error: profileError } = await supabase.from('profiles').select('salary').eq('id', user.id).single();
-      if (profileError && profileError.code !== 'PGRST116') throw profileError; // PGRST116 is "Row not found" which is fine initially
-      if (profile) setSalary(profile.salary);
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('salary').eq('id', user.id).maybeSingle();
+      if (profileError && profileError.code !== 'PGRST116' && profileError.code !== '406') {
+        console.warn('Profile fetch issue:', profileError);
+      }
+      if (profile?.salary) setSalary(profile.salary);
 
       // Fetch Expenses
       const { data: expensesData, error: expensesError } = await supabase.from('expenses').select('*').eq('user_id', user.id);
@@ -119,6 +125,21 @@ const App: React.FC = () => {
       const { data: fixedExpensesData, error: fixedError } = await supabase.from('fixed_expenses').select('*').eq('user_id', user.id);
       if (fixedError) throw fixedError;
       if (fixedExpensesData) setFixedExpenses(fixedExpensesData.map(e => ({ ...e, id: e.id.toString() })));
+
+      // Fetch Debts
+      const { data: debtsData, error: debtsError } = await supabase.from('debts').select('*').eq('user_id', user.id);
+      if (debtsError && debtsError.code !== 'PGRST116' && debtsError.code !== '42P01') {
+        console.warn('Debts table might not exist yet:', debtsError);
+      }
+      if (debtsData) setDebts(debtsData.map(d => ({ ...d, id: d.id.toString() })));
+
+      // Fetch Savings Goals
+      const { data: savingsData, error: savingsError } = await supabase.from('savings_goals').select('*').eq('user_id', user.id);
+      if (savingsError && savingsError.code !== 'PGRST116' && savingsError.code !== '42P01') {
+        console.warn('Savings goals table might not exist yet:', savingsError);
+      }
+      if (savingsData) setSavingsGoals(savingsData.map(s => ({ ...s, id: s.id.toString() })));
+
     } catch (error) {
       handleGlobalError(error);
     }
@@ -133,6 +154,8 @@ const App: React.FC = () => {
       setSalary(7000);
       setCategories([...DEFAULT_CATEGORIES]);
       setFixedExpenses([]);
+      setDebts([]);
+      setSavingsGoals([]);
     }
   }, [user, fetchData]);
 
@@ -162,7 +185,6 @@ const App: React.FC = () => {
   const updateSalary = useCallback(async (newSalary: number) => {
     if (!user) return;
     try {
-      // Upsert salary
       const { error } = await supabase.from('profiles').upsert({ id: user.id, salary: newSalary });
       if (error) throw error;
       setSalary(newSalary);
@@ -182,14 +204,48 @@ const App: React.FC = () => {
     }
   }, [user, categories, handleGlobalError]);
 
+  const deleteCategory = useCallback(async (category: Category) => {
+    if (!user || DEFAULT_CATEGORIES.includes(category as any)) return;
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('name', category)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setCategories(prev => prev.filter(c => c !== category));
+    } catch (error) {
+      handleGlobalError(error);
+    }
+  }, [user, handleGlobalError]);
+
   const totalExpenses = useMemo(() => {
     return expenses.reduce((sum, expense) => sum + expense.amount, 0);
   }, [expenses]);
 
+  const fixedExpensesTotal = useMemo(() => {
+    return fixedExpenses.reduce((sum, fe) => sum + fe.amount, 0);
+  }, [fixedExpenses]);
+
+  const totalDebts = useMemo(() => {
+    return debts.reduce((sum, d) => sum + d.current_balance, 0);
+  }, [debts]);
+
+  const totalSavings = useMemo(() => {
+    return savingsGoals.reduce((sum, g) => sum + g.current_amount, 0);
+  }, [savingsGoals]);
+
   const remainingBalance = useMemo(() => salary - totalExpenses, [salary, totalExpenses]);
 
   if (loading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><p>Loading...</p></div>;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!session) {
@@ -202,10 +258,10 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="salary-tracker-theme">
-      <div className="min-h-screen bg-background text-foreground font-sans antialiased">
-        <Header 
-          salary={salary} 
-          setSalary={updateSalary} 
+      <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-20 md:pb-0">
+        <Header
+          salary={salary}
+          setSalary={updateSalary}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           onMenuOpenChange={setIsMobileMenuOpen}
@@ -234,32 +290,54 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <main className="container mx-auto p-4 md:p-8 space-y-8">
-          {currentPage === 'dashboard' ? (
+        <main className="container mx-auto p-4 md:p-8 space-y-6">
+          {currentPage === 'dashboard' && (
             <>
               <SummaryCards
                 salary={salary}
                 totalExpenses={totalExpenses}
                 remainingBalance={remainingBalance}
+                fixedExpensesTotal={fixedExpensesTotal}
+                totalDebts={totalDebts}
+                totalSavings={totalSavings}
               />
-              <ExpenseDashboard expenses={expenses} deleteExpense={deleteExpense} categories={categories} />
+              <ExpenseCharts expenses={expenses} />
+              <ExpenseList expenses={expenses} deleteExpense={deleteExpense} />
             </>
-          ) : (
+          )}
+
+          {currentPage === 'expenses' && (
+            <ExpenseDashboard expenses={expenses} deleteExpense={deleteExpense} categories={categories} />
+          )}
+
+          {currentPage === 'fixedExpenses' && (
             <FixedExpenses initialFixedExpenses={fixedExpenses} user={user} />
+          )}
+
+          {currentPage === 'debts' && (
+            <DebtManager initialDebts={debts} user={user} />
+          )}
+
+          {currentPage === 'savings' && (
+            <SavingsGoals initialGoals={savingsGoals} user={user} monthlyIncome={salary} />
           )}
         </main>
 
-        {currentPage === 'dashboard' && !isMobileMenuOpen && (
-          <div className="fixed bottom-6 right-10 z-50">
+        {/* Floating Action Button - Only on expenses page */}
+        {currentPage === 'expenses' && !isMobileMenuOpen && (
+          <div className="fixed bottom-24 md:bottom-6 right-6 z-40">
             <button
               onClick={() => setIsAddExpenseOpen(true)}
-              className="bg-primary text-primary-foreground h-16 w-16 rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="bg-primary text-primary-foreground h-14 w-14 md:h-16 md:w-16 rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               aria-label="Add new expense"
             >
-              <Plus className="h-8 w-8" />
+              <Plus className="h-7 w-7 md:h-8 md:w-8" />
             </button>
           </div>
         )}
+
+        {/* Mobile Bottom Navigation */}
+        <MobileNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
 
         <AddExpense
           isOpen={isAddExpenseOpen}
@@ -267,6 +345,7 @@ const App: React.FC = () => {
           addExpense={addExpense}
           categories={categories}
           addCategory={addCategory}
+          deleteCategory={deleteCategory}
         />
 
         <UpdatePassword

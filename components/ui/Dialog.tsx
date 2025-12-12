@@ -15,7 +15,7 @@ interface DialogProps {
 
 export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -23,31 +23,40 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) 
       }
     };
 
+    // Prevent body scroll when modal is open
     if (open) {
       document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
     };
   }, [open, onOpenChange]);
 
   if (!open) return null;
-  
+
   return (
-    <div 
-      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       onClick={() => onOpenChange(false)}
     >
-      <div 
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+
+      {/* Modal */}
+      <div
         ref={dialogRef}
-        className="fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border bg-background p-6 shadow-lg sm:rounded-lg"
+        className="relative z-[101] w-full max-w-md bg-card border rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
-        {children}
-        <button 
+        <div className="p-6">
+          {children}
+        </div>
+        <button
           onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+          className="absolute right-4 top-4 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted transition-all focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
@@ -58,7 +67,7 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) 
 };
 
 export const DialogContent: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className }) => (
-  <div className={cn(className)}>{children}</div>
+  <div className={cn("max-h-[80vh] overflow-y-auto px-1 -mx-1 scrollbar-hide", className)} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>{children}</div>
 );
 
 export const DialogHeader: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className }) => (

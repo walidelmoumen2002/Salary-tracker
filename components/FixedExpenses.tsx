@@ -9,19 +9,26 @@ import { formatCurrency, getErrorMessage } from '../lib/utils';
 import type { User } from '@supabase/supabase-js';
 
 const TrashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        {...props}
-    >
-        <path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.02.166m-1.02-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.338-.059.678-.114 1.02-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+    </svg>
+);
+
+const PencilIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
+    </svg>
+);
+
+const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M20 6 9 17l-5-5"/>
+    </svg>
+);
+
+const XIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
     </svg>
 );
 
@@ -35,6 +42,9 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
     const [newTask, setNewTask] = useState('');
     const [newAmount, setNewAmount] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editTask, setEditTask] = useState('');
+    const [editAmount, setEditAmount] = useState('');
 
     useEffect(() => {
         setFixedExpenses(initialFixedExpenses);
@@ -107,6 +117,63 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
         }
     };
 
+    const resetAllTasks = async () => {
+        if (!user || fixedExpenses.length === 0) return;
+
+        const completedIds = fixedExpenses.filter(e => e.is_completed).map(e => e.id);
+        if (completedIds.length === 0) return;
+
+        setError(null);
+        try {
+            const { error } = await supabase
+                .from('fixed_expenses')
+                .update({ is_completed: false })
+                .eq('user_id', user.id)
+                .in('id', completedIds);
+
+            if (error) throw error;
+            setFixedExpenses(prev => prev.map(task => ({ ...task, is_completed: false })));
+        } catch (err) {
+            handleError(err);
+        }
+    };
+
+    const hasCompletedTasks = fixedExpenses.some(e => e.is_completed);
+
+    const startEditing = (task: FixedExpense) => {
+        setEditingId(task.id);
+        setEditTask(task.task);
+        setEditAmount(task.amount.toString());
+    };
+
+    const cancelEditing = () => {
+        setEditingId(null);
+        setEditTask('');
+        setEditAmount('');
+    };
+
+    const saveEdit = async () => {
+        if (!editingId || !editTask.trim()) return;
+        const amountValue = parseFloat(editAmount);
+        if (isNaN(amountValue) || amountValue <= 0) return;
+
+        setError(null);
+        try {
+            const { error } = await supabase
+                .from('fixed_expenses')
+                .update({ task: editTask.trim(), amount: amountValue })
+                .match({ id: editingId });
+
+            if (error) throw error;
+            setFixedExpenses(prev => prev.map(t =>
+                t.id === editingId ? { ...t, task: editTask.trim(), amount: amountValue } : t
+            ));
+            cancelEditing();
+        } catch (err) {
+            handleError(err);
+        }
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -118,7 +185,19 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                     <div className="text-right">
                         <p className="text-sm font-medium text-muted-foreground">Total</p>
                         <p className="text-lg font-bold">{formatCurrency(totalAmount)}</p>
-                        <p className="text-xs text-green-500">{formatCurrency(paidAmount)} paid</p>
+                        <div className="flex items-center justify-end gap-2">
+                            <p className="text-xs text-green-500">{formatCurrency(paidAmount)} paid</p>
+                            {hasCompletedTasks && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={resetAllTasks}
+                                    className="h-5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                >
+                                    Reset
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </CardHeader>
@@ -153,26 +232,57 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                 ) : (
                     <ul className="border rounded-lg divide-y mt-4">
                         {fixedExpenses.map(task => (
-                            <li key={task.id} className="p-4 flex items-center justify-between hover:bg-secondary/50">
-                                <div className="flex items-center gap-4">
-                                    <input
-                                        type="checkbox"
-                                        checked={task.is_completed}
-                                        onChange={() => toggleTask(task.id, task.is_completed)}
-                                        className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
-                                    />
-                                    <span className={task.is_completed ? 'line-through text-muted-foreground' : ''}>
-                                        {task.task}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <span className={`font-semibold ${task.is_completed ? 'text-muted-foreground line-through' : ''}`}>
-                                        {formatCurrency(task.amount)}
-                                    </span>
-                                    <Button variant="ghost" size="icon" onClick={() => deleteTask(task.id)}>
-                                        <TrashIcon className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                                    </Button>
-                                </div>
+                            <li key={task.id} className="p-4 hover:bg-secondary/50">
+                                {editingId === task.id ? (
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            value={editTask}
+                                            onChange={(e) => setEditTask(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                                            className="flex-grow"
+                                            autoFocus
+                                        />
+                                        <Input
+                                            type="number"
+                                            value={editAmount}
+                                            onChange={(e) => setEditAmount(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                                            className="w-28"
+                                            step="0.01"
+                                        />
+                                        <Button variant="ghost" size="icon" onClick={saveEdit} className="h-8 w-8">
+                                            <CheckIcon className="h-4 w-4 text-green-600" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={cancelEditing} className="h-8 w-8">
+                                            <XIcon className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <input
+                                                type="checkbox"
+                                                checked={task.is_completed}
+                                                onChange={() => toggleTask(task.id, task.is_completed)}
+                                                className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                            />
+                                            <span className={task.is_completed ? 'line-through text-muted-foreground' : ''}>
+                                                {task.task}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`font-semibold ${task.is_completed ? 'text-muted-foreground line-through' : ''}`}>
+                                                {formatCurrency(task.amount)}
+                                            </span>
+                                            <Button variant="ghost" size="icon" onClick={() => startEditing(task)} className="h-8 w-8">
+                                                <PencilIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" onClick={() => deleteTask(task.id)} className="h-8 w-8">
+                                                <TrashIcon className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </li>
                         ))}
                     </ul>

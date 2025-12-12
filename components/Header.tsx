@@ -4,14 +4,14 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { ThemeToggle } from './ThemeToggle';
 import { supabase } from '../lib/supabase';
-import { Nav } from './Nav';
+import { Nav, Page } from './Nav';
 import { cn } from '../lib/utils';
 
 interface HeaderProps {
   salary: number;
   setSalary: (salary: number) => void;
-  currentPage: 'dashboard' | 'fixedExpenses';
-  setCurrentPage: (page: 'dashboard' | 'fixedExpenses') => void;
+  currentPage: Page;
+  setCurrentPage: (page: Page) => void;
   onMenuOpenChange?: (open: boolean) => void;
 }
 
@@ -23,6 +23,37 @@ const XIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 );
 
+// Navigation Icons for Mobile Menu
+const DashboardIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+  </svg>
+);
+
+const ReceiptIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>
+  </svg>
+);
+
+const CreditCardIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+  </svg>
+);
+
+const TargetIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+  </svg>
+);
+
+const navItems: { page: Page; label: string; icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
+  { page: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
+  { page: 'fixedExpenses', label: 'Fixed Expenses', icon: ReceiptIcon },
+  { page: 'debts', label: 'Debts', icon: CreditCardIcon },
+  { page: 'savings', label: 'Savings', icon: TargetIcon },
+];
 
 export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, setCurrentPage, onMenuOpenChange }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -54,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
       setIsEditing(false);
     }
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSave();
@@ -64,9 +95,9 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   }
-  
-  const mobileNavItemClasses = (page: 'dashboard' | 'fixedExpenses') => cn(
-    "cursor-pointer text-lg font-medium transition-colors w-full p-3 rounded-md",
+
+  const mobileNavItemClasses = (page: Page) => cn(
+    "cursor-pointer text-base font-medium transition-colors w-full p-3 rounded-lg flex items-center gap-3",
     currentPage === page
       ? "bg-primary text-primary-foreground"
       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -76,8 +107,8 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
     <>
       <header className="bg-card border-b sticky top-0 z-40">
         <div className="container mx-auto p-4 flex justify-between items-center">
-          <div className="flex items-center gap-8">
-            <h1 className="text-2xl font-bold tracking-tight">Salary Tracker</h1>
+          <div className="flex items-center gap-4 md:gap-8">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">Salary Tracker</h1>
             <div className="hidden md:flex">
                 <Nav currentPage={currentPage} setCurrentPage={setCurrentPage} />
             </div>
@@ -99,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
             ) : (
                currentPage === 'dashboard' && (
                 <>
-                  <span className="text-lg font-medium text-muted-foreground hidden sm:inline">Salary: {formatCurrency(salary)}</span>
+                  <span className="text-sm font-medium text-muted-foreground hidden lg:inline">Salary: {formatCurrency(salary)}</span>
                   <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">Edit</Button>
                 </>
               )
@@ -114,36 +145,41 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
           </div>
         </div>
       </header>
-      
+
+      {/* Mobile Menu */}
       {isMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden animate-in fade-in duration-200 overflow-hidden"
           onClick={() => setMenuOpen(false)}
         >
-            <div 
+            <div
               className="absolute top-0 right-0 bottom-0 h-full w-full max-w-sm bg-card border-l p-4 flex flex-col animate-in slide-in-from-right duration-300"
               onClick={e => e.stopPropagation()}
             >
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold">Menu</h2>
                     <Button onClick={() => setMenuOpen(false)} variant="ghost" size="icon">
                         <XIcon className="h-6 w-6" />
                     </Button>
                 </div>
 
-                <nav className="flex flex-col space-y-2 mb-8">
-                    <a onClick={() => { setCurrentPage('dashboard'); setMenuOpen(false); }} className={mobileNavItemClasses('dashboard')}>
-                        Dashboard
-                    </a>
-                    <a onClick={() => { setCurrentPage('fixedExpenses'); setMenuOpen(false); }} className={mobileNavItemClasses('fixedExpenses')}>
-                        Fixed Expenses
-                    </a>
+                <nav className="flex flex-col space-y-1 mb-6">
+                    {navItems.map(({ page, label, icon: Icon }) => (
+                      <a
+                        key={page}
+                        onClick={() => { setCurrentPage(page); setMenuOpen(false); }}
+                        className={mobileNavItemClasses(page)}
+                      >
+                        <Icon className="h-5 w-5" />
+                        {label}
+                      </a>
+                    ))}
                 </nav>
 
-                <div className="mt-auto space-y-6 border-t pt-6">
+                <div className="mt-auto space-y-4 border-t pt-4">
                     {currentPage === 'dashboard' && (
                         <div className="space-y-2">
-                            <h3 className="text-sm font-medium text-muted-foreground px-1">Salary</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground px-1">Monthly Salary</h3>
                             {isEditing ? (
                                 <div className='space-y-2'>
                                   <Input
@@ -159,19 +195,19 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
                                   </div>
                                 </div>
                             ) : (
-                                <div className="flex items-center justify-between p-2 rounded-md border">
-                                    <span className="font-medium">{formatCurrency(salary)}</span>
+                                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                                    <span className="font-semibold">{formatCurrency(salary)}</span>
                                     <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">Edit</Button>
                                 </div>
                             )}
                         </div>
                     )}
-                    
-                    <div className="flex items-center justify-between px-1">
+
+                    <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
                         <span className="text-sm font-medium">Theme</span>
                         <ThemeToggle />
                     </div>
-                    
+
                     <Button onClick={handleSignOut} variant="outline" className="w-full">Sign Out</Button>
                 </div>
             </div>
