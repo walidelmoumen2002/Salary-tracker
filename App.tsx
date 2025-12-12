@@ -231,6 +231,10 @@ const App: React.FC = () => {
     return debts.reduce((sum, d) => sum + d.current_balance, 0);
   }, [debts]);
 
+  const paidDebts = useMemo(() => {
+    return debts.reduce((sum, d) => sum + (d.total_amount - d.current_balance), 0);
+  }, [debts]);
+
   const totalSavings = useMemo(() => {
     return savingsGoals.reduce((sum, g) => sum + g.current_amount, 0);
   }, [savingsGoals]);
@@ -258,7 +262,7 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="salary-tracker-theme">
-      <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-20 md:pb-0">
+      <div className="min-h-screen bg-background text-foreground font-sans antialiased flex flex-col">
         <Header
           salary={salary}
           setSalary={updateSalary}
@@ -290,7 +294,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <main className="container mx-auto p-4 md:p-8 space-y-6">
+        <main className="container mx-auto px-4 py-3 sm:px-4 sm:py-4 md:p-8 space-y-3 sm:space-y-6 flex-1 pb-20 md:pb-0">
           {currentPage === 'dashboard' && (
             <>
               <SummaryCards
@@ -299,6 +303,7 @@ const App: React.FC = () => {
                 remainingBalance={remainingBalance}
                 fixedExpensesTotal={fixedExpensesTotal}
                 totalDebts={totalDebts}
+                paidDebts={paidDebts}
                 totalSavings={totalSavings}
               />
               <ExpenseCharts expenses={expenses} />

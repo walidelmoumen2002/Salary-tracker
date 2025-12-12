@@ -146,31 +146,19 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, deleteExpens
   const groupedExpenses = groupExpensesByDate(expenses);
 
   if (expenses.length === 0) {
-    return (
-      <div className="text-center py-12 sm:py-16">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
-            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
-            <path d="M12 17.5v-11"/>
-          </svg>
-        </div>
-        <h3 className="text-lg font-semibold">No expenses yet!</h3>
-        <p className="text-muted-foreground text-sm mt-1">Click the '+' button to add your first expense.</p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg sm:text-xl font-semibold">Expense History</h3>
+        <h3 className="text-base sm:text-xl font-semibold">Expense History</h3>
         <span className="text-xs sm:text-sm text-muted-foreground">
           {expenses.length} transaction{expenses.length !== 1 ? 's' : ''}
         </span>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {groupedExpenses.map(({ date, expenses: dayExpenses, total }) => (
           <div key={date} className="space-y-2">
             {/* Date Header */}

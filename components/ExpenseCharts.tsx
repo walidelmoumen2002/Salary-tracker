@@ -78,7 +78,7 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({ expenses }) => {
   const customTooltipFormatter = (value: number) => formatCurrency(value);
 
   return (
-    <div className="grid gap-4 md:gap-6 md:grid-cols-2">
+    <div className="grid gap-3 sm:gap-4 md:gap-6 md:grid-cols-2">
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base sm:text-lg font-semibold text-center">
