@@ -100,7 +100,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 
         {/* Salary Card */}
         <Card className="relative overflow-hidden active:scale-[0.98] transition-transform duration-150">
-          <CardContent className="p-4 py-5 sm:p-6">
+          <CardContent className="p-4 pt-10 pb-8 sm:p-6 sm:py-7">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
                 <WalletIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
@@ -120,7 +120,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 
         {/* Expenses Card */}
         <Card className="relative overflow-hidden active:scale-[0.98] transition-transform duration-150">
-          <CardContent className="p-4 py-5 sm:p-6">
+          <CardContent className="p-4 pt-10 pb-8 sm:p-6 sm:py-7">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
                 <TrendingDownIcon className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 dark:text-red-400" />
@@ -145,7 +145,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 
         {/* Balance Card - Full width on xs screens */}
         <Card className="relative overflow-hidden active:scale-[0.98] transition-transform duration-150 xs:col-span-2 lg:col-span-1">
-          <CardContent className="p-4 py-5 sm:p-6">
+          <CardContent className="p-4 pt-10 pb-8 sm:p-6 sm:py-7">
             <div className="flex items-center gap-3">
               <div className={`h-11 w-11 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center flex-shrink-0 ${isPositiveBalance
                 ? 'bg-emerald-100 dark:bg-emerald-900/40'
@@ -179,25 +179,25 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
         </Card>
       </div>
 
-      {/* Quick Stats Row - Compact horizontal layout */}
+      {/* Quick Stats Row */}
       {(totalDebts > 0 || totalSavings > 0) && (
-        <div className="grid gap-2.5 grid-cols-2">
+        <div className="grid gap-2.5 grid-cols-1 sm:grid-cols-2">
           {totalDebts > 0 && (
             <Card className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-200/60 dark:border-orange-800/40">
-              <CardContent className="p-3 py-4 sm:p-5">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0">
-                    <CreditCardIcon className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
+              <CardContent className="p-4 pt-8 pb-6 sm:p-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0">
+                    <CreditCardIcon className="h-5 w-5 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="text-[10px] sm:text-xs text-orange-700/70 dark:text-orange-300/70 font-medium">
+                    <p className="text-xs sm:text-xs text-orange-700/70 dark:text-orange-300/70 font-medium">
                       Total Debt
                     </p>
-                    <p className="text-sm sm:text-lg font-bold text-orange-600 dark:text-orange-400 truncate">
+                    <p className="text-lg sm:text-lg font-bold text-orange-600 dark:text-orange-400 truncate">
                       {formatCurrency(totalDebts)}
                     </p>
                     {paidDebts > 0 && (
-                      <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                      <p className="text-xs sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                         {formatCurrency(paidDebts)} paid
                       </p>
                     )}
@@ -209,16 +209,16 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 
           {totalSavings > 0 && (
             <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200/60 dark:border-emerald-800/40">
-              <CardContent className="p-3 py-4 sm:p-5">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
-                    <TargetIcon className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400" />
+              <CardContent className="p-4 pt-8 pb-6 sm:p-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
+                    <TargetIcon className="h-5 w-5 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="text-[10px] sm:text-xs text-emerald-700/70 dark:text-emerald-300/70 font-medium">
+                    <p className="text-xs sm:text-xs text-emerald-700/70 dark:text-emerald-300/70 font-medium">
                       Total Savings
                     </p>
-                    <p className="text-sm sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                    <p className="text-lg sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 truncate">
                       {formatCurrency(totalSavings)}
                     </p>
                   </div>
@@ -231,7 +231,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 
       {/* Budget Progress Section - Simplified for mobile */}
       <Card>
-        <CardContent className="p-4 sm:p-5">
+        <CardContent className="p-4 pt-8 pb-6 sm:p-5">
           <div className="space-y-3">
             {/* Header */}
             <div className="flex items-center justify-between">

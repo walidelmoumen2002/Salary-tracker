@@ -16,6 +16,7 @@ import { FixedExpenses } from './components/FixedExpenses';
 import { DebtManager } from './components/DebtManager';
 import { SavingsGoals } from './components/SavingsGoals';
 import { MobileNav, Page } from './components/Nav';
+import { Footer } from './components/Footer';
 import { getErrorMessage } from './lib/utils';
 import { Button } from './components/ui/Button';
 
@@ -355,6 +356,9 @@ const App: React.FC = () => {
             </button>
           </div>
         )}
+
+        {/* Footer - Hidden on mobile due to bottom nav */}
+        <Footer />
 
         {/* Mobile Bottom Navigation */}
         <MobileNav currentPage={currentPage} setCurrentPage={setCurrentPage} />

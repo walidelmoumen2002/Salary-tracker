@@ -60,14 +60,22 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
   const [newSalary, setNewSalary] = useState(salary.toString());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMenuClosing, setIsMenuClosing] = useState(false);
+  const [isMenuAnimating, setIsMenuAnimating] = useState(false);
 
   const setMenuOpen = (open: boolean) => {
     if (open) {
       setIsMenuOpen(true);
       setIsMenuClosing(false);
       onMenuOpenChange?.(true);
+      // Trigger animation after mount
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsMenuAnimating(true);
+        });
+      });
     } else {
       setIsMenuClosing(true);
+      setIsMenuAnimating(false);
       setTimeout(() => {
         setIsMenuOpen(false);
         setIsMenuClosing(false);
@@ -78,16 +86,22 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
 
   // Prevent background scroll when mobile menu is open
   useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    if (isMenuOpen) {
+    if (isMenuOpen && !isMenuClosing) {
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = originalOverflow || '';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${window.scrollY}px`;
+    } else if (!isMenuOpen) {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     }
-    return () => {
-      document.body.style.overflow = originalOverflow || '';
-    };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isMenuClosing]);
 
   const handleSave = () => {
     const salaryValue = parseFloat(newSalary);
@@ -162,14 +176,14 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
         <div
           className={cn(
             "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden overflow-hidden transition-opacity duration-300",
-            isMenuClosing ? "opacity-0" : "opacity-100"
+            isMenuAnimating && !isMenuClosing ? "opacity-100" : "opacity-0"
           )}
           onClick={() => setMenuOpen(false)}
         >
             <div
               className={cn(
                 "absolute top-0 right-0 bottom-0 h-full w-full max-w-sm bg-card border-l p-4 flex flex-col overflow-y-auto transition-transform duration-300",
-                isMenuClosing ? "translate-x-full" : "translate-x-0"
+                isMenuAnimating && !isMenuClosing ? "translate-x-0" : "translate-x-full"
               )}
               onClick={e => e.stopPropagation()}
             >

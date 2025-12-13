@@ -176,23 +176,25 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
 
     return (
         <Card>
-            <CardHeader>
-                <div className="flex justify-between items-start">
+            <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                     <div>
-                        <CardTitle>Fixed Monthly Expenses</CardTitle>
-                        <p className="text-muted-foreground text-sm pt-1">Track your recurring bills and subscriptions.</p>
+                        <CardTitle className="text-lg sm:text-xl">Fixed Monthly Expenses</CardTitle>
+                        <p className="text-muted-foreground text-xs sm:text-sm pt-1">Track your recurring bills and subscriptions.</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-sm font-medium text-muted-foreground">Total</p>
-                        <p className="text-lg font-bold">{formatCurrency(totalAmount)}</p>
-                        <div className="flex items-center justify-end gap-2">
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-0 bg-muted/50 sm:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none">
+                        <div className="sm:text-right">
+                            <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total</p>
+                            <p className="text-lg sm:text-lg font-bold">{formatCurrency(totalAmount)}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
                             <p className="text-xs text-green-500">{formatCurrency(paidAmount)} paid</p>
                             {hasCompletedTasks && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={resetAllTasks}
-                                    className="h-5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                    className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                                 >
                                     Reset
                                 </Button>
@@ -202,7 +204,7 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="flex gap-2 mb-2">
+                <div className="flex flex-col sm:flex-row gap-2 mb-4">
                     <Input
                         placeholder="e.g., Rent, Netflix"
                         value={newTask}
@@ -210,16 +212,18 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                         onKeyDown={(e) => e.key === 'Enter' && addTask()}
                         className="flex-grow"
                     />
-                    <Input
-                        type="number"
-                        placeholder="Amount"
-                        value={newAmount}
-                        onChange={(e) => setNewAmount(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && addTask()}
-                        className="w-32"
-                        step="0.01"
-                    />
-                    <Button onClick={addTask}>Add</Button>
+                    <div className="flex gap-2">
+                        <Input
+                            type="number"
+                            placeholder="Amount"
+                            value={newAmount}
+                            onChange={(e) => setNewAmount(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                            className="flex-1 sm:w-32"
+                            step="0.01"
+                        />
+                        <Button onClick={addTask} className="shrink-0">Add</Button>
+                    </div>
                 </div>
 
                 {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
