@@ -251,6 +251,10 @@ const App: React.FC = () => {
     return debts.reduce((sum, d) => sum + (d.total_amount - d.current_balance), 0);
   }, [debts]);
 
+  const totalDebtsOriginal = useMemo(() => {
+    return debts.reduce((sum, d) => sum + d.total_amount, 0);
+  }, [debts]);
+
   const totalSavings = useMemo(() => {
     return savingsGoals.reduce((sum, g) => sum + g.current_amount, 0);
   }, [savingsGoals]);
@@ -319,6 +323,7 @@ const App: React.FC = () => {
                 remainingBalance={remainingBalance}
                 fixedExpensesTotal={fixedExpensesTotal}
                 totalDebts={totalDebts}
+                totalDebtsOriginal={totalDebtsOriginal}
                 paidDebts={paidDebts}
                 totalSavings={totalSavings}
               />

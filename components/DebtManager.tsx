@@ -115,10 +115,11 @@ export const DebtManager: React.FC<DebtManagerProps> = ({ initialDebts, user }) 
   const [paymentAmount, setPaymentAmount] = useState('');
 
   // Calculations
-  const { totalDebt, totalPaid, debtCount } = useMemo(() => {
+  const { totalDebt, totalPaid, totalDebtOriginal, debtCount } = useMemo(() => {
     const total = debts.reduce((sum, d) => sum + d.current_balance, 0);
     const paid = debts.reduce((sum, d) => sum + (d.total_amount - d.current_balance), 0);
-    return { totalDebt: total, totalPaid: paid, debtCount: debts.length };
+    const original = debts.reduce((sum, d) => sum + d.total_amount, 0);
+    return { totalDebt: total, totalPaid: paid, totalDebtOriginal: original, debtCount: debts.length };
   }, [debts]);
 
   const handleError = (err: any) => {
@@ -224,11 +225,16 @@ export const DebtManager: React.FC<DebtManagerProps> = ({ initialDebts, user }) 
         <Card className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-red-200 dark:border-red-800/30">
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Debt</p>
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Remaining Debt</p>
                 <p className="text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400">{formatCurrency(totalDebt)}</p>
+                {totalDebtOriginal > 0 && (
+                  <p className="text-[10px] sm:text-xs text-red-600/60 dark:text-red-400/60 mt-0.5">
+                    of {formatCurrency(totalDebtOriginal)} original
+                  </p>
+                )}
               </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center shrink-0">
                 <TrendingDownIcon className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 dark:text-red-400" />
               </div>
             </div>

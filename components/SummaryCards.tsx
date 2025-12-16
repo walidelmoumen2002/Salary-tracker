@@ -9,6 +9,7 @@ interface SummaryCardsProps {
   remainingBalance: number;
   fixedExpensesTotal?: number;
   totalDebts?: number;
+  totalDebtsOriginal?: number;
   paidDebts?: number;
   totalSavings?: number;
 }
@@ -73,6 +74,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
   remainingBalance,
   fixedExpensesTotal = 0,
   totalDebts = 0,
+  totalDebtsOriginal = 0,
   paidDebts = 0,
   totalSavings = 0
 }) => {
@@ -191,16 +193,23 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
                   </div>
                   <div className="min-w-0 flex-1 space-y-0.5">
                     <p className="text-xs sm:text-xs text-orange-700/70 dark:text-orange-300/70 font-medium">
-                      Total Debt
+                      Remaining Debt
                     </p>
                     <p className="text-lg sm:text-lg font-bold text-orange-600 dark:text-orange-400 truncate">
                       {formatCurrency(totalDebts)}
                     </p>
-                    {paidDebts > 0 && (
-                      <p className="text-xs sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                        {formatCurrency(paidDebts)} paid
-                      </p>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {totalDebtsOriginal > 0 && (
+                        <p className="text-[10px] sm:text-xs text-orange-600/60 dark:text-orange-400/60">
+                          of {formatCurrency(totalDebtsOriginal)}
+                        </p>
+                      )}
+                      {paidDebts > 0 && (
+                        <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                          • {formatCurrency(paidDebts)} paid
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
