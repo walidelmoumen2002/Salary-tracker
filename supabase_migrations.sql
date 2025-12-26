@@ -149,3 +149,59 @@ CREATE POLICY "Users can delete their own savings deposits" ON savings_deposits
 -- Create index for faster queries
 CREATE INDEX IF NOT EXISTS idx_savings_deposits_user_id ON savings_deposits(user_id);
 CREATE INDEX IF NOT EXISTS idx_savings_deposits_goal_id ON savings_deposits(goal_id);
+
+-- ============================================
+-- CATEGORY BUDGETS TABLE (New Feature)
+-- ============================================
+CREATE TABLE IF NOT EXISTS category_budgets (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    category TEXT NOT NULL,
+    budget_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, category)
+);
+
+-- Enable Row Level Security
+ALTER TABLE category_budgets ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist, then create
+DROP POLICY IF EXISTS "Users can view their own category budgets" ON category_budgets;
+DROP POLICY IF EXISTS "Users can insert their own category budgets" ON category_budgets;
+DROP POLICY IF EXISTS "Users can update their own category budgets" ON category_budgets;
+DROP POLICY IF EXISTS "Users can delete their own category budgets" ON category_budgets;
+
+CREATE POLICY "Users can view their own category budgets" ON category_budgets
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own category budgets" ON category_budgets
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own category budgets" ON category_budgets
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own category budgets" ON category_budgets
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Create index for faster queries
+CREATE INDEX IF NOT EXISTS idx_category_budgets_user_id ON category_budgets(user_id);
+
+-- ============================================
+-- PROFILES TABLE POLICIES (Fix for salary update)
+-- ============================================
+-- Ensure profiles table has proper RLS policies
+
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
+
+CREATE POLICY "Users can view own profile" ON profiles
+    FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON profiles
+    FOR UPDATE USING (auth.uid() = id)
+    WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON profiles
+    FOR INSERT WITH CHECK (auth.uid() = id);

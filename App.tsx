@@ -16,7 +16,10 @@ import { FixedExpenses } from './components/FixedExpenses';
 import { DebtManager } from './components/DebtManager';
 import { SavingsGoals } from './components/SavingsGoals';
 import { MobileNav, Page } from './components/Nav';
+import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
+import { BudgetManager } from './components/BudgetManager';
+import { MonthlyReport } from './components/MonthlyReport';
 import { getErrorMessage } from './lib/utils';
 import { Button } from './components/ui/Button';
 
@@ -58,6 +61,7 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleGlobalError = useCallback((error: any) => {
     console.error("Global Error:", error);
@@ -282,39 +286,49 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="salary-tracker-theme">
-      <div className="min-h-screen bg-background text-foreground font-sans antialiased flex flex-col">
-        <Header
-          salary={salary}
-          setSalary={updateSalary}
+      <div className="min-h-screen bg-background text-foreground font-sans antialiased flex">
+        {/* Desktop Sidebar */}
+        <Sidebar
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
-          onMenuOpenChange={setIsMobileMenuOpen}
+          isCollapsed={isSidebarCollapsed}
+          onCollapsedChange={setIsSidebarCollapsed}
+        />
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-h-screen">
+          <Header
+            salary={salary}
+            setSalary={updateSalary}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            onMenuOpenChange={setIsMobileMenuOpen}
           />
 
-        {globalError && (
-          <div className="bg-destructive/15 text-destructive px-4 py-3 text-center text-sm font-medium border-b border-destructive/20 animate-in slide-in-from-top flex flex-col sm:flex-row items-center justify-center gap-2 relative">
-            <p>{globalError}</p>
-            {globalError.includes("Unable to connect") && user && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fetchData(user)}
-                className="h-7 px-3 border-destructive/30 hover:bg-destructive/20 bg-transparent text-destructive hover:text-destructive text-xs"
+          {globalError && (
+            <div className="bg-destructive/15 text-destructive px-4 py-3 text-center text-sm font-medium border-b border-destructive/20 animate-in slide-in-from-top flex flex-col sm:flex-row items-center justify-center gap-2 relative">
+              <p>{globalError}</p>
+              {globalError.includes("Unable to connect") && user && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchData(user)}
+                  className="h-7 px-3 border-destructive/30 hover:bg-destructive/20 bg-transparent text-destructive hover:text-destructive text-xs"
+                >
+                  Retry
+                </Button>
+              )}
+              <button
+                onClick={() => setGlobalError(null)}
+                className="sm:absolute sm:right-4 p-1 hover:bg-destructive/20 rounded-full transition-colors"
+                aria-label="Dismiss error"
               >
-                Retry
-              </Button>
-            )}
-            <button
-              onClick={() => setGlobalError(null)}
-              className="sm:absolute sm:right-4 p-1 hover:bg-destructive/20 rounded-full transition-colors"
-              aria-label="Dismiss error"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
-        <main className="container mx-auto px-4 py-3 sm:px-4 sm:py-4 md:p-8 space-y-3 sm:space-y-6 flex-1 pb-20 md:pb-0">
+          <main className="flex-1 px-4 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6 space-y-3 sm:space-y-6 pb-20 md:pb-6 overflow-y-auto">
           {currentPage === 'dashboard' && (
             <>
               <SummaryCards
@@ -347,7 +361,19 @@ const App: React.FC = () => {
           {currentPage === 'savings' && (
             <SavingsGoals initialGoals={savingsGoals} user={user} monthlyIncome={salary} />
           )}
-        </main>
+
+          {currentPage === 'budgets' && (
+            <BudgetManager expenses={expenses} user={user} salary={salary} />
+          )}
+
+          {currentPage === 'reports' && (
+            <MonthlyReport expenses={expenses} salary={salary} />
+          )}
+          </main>
+
+          {/* Footer - Hidden on mobile due to bottom nav */}
+          <Footer />
+        </div>
 
         {/* Floating Action Button - Only on expenses page */}
         {currentPage === 'expenses' && !isMobileMenuOpen && (
@@ -361,9 +387,6 @@ const App: React.FC = () => {
             </button>
           </div>
         )}
-
-        {/* Footer - Hidden on mobile due to bottom nav */}
-        <Footer />
 
         {/* Mobile Bottom Navigation */}
         <MobileNav currentPage={currentPage} setCurrentPage={setCurrentPage} />

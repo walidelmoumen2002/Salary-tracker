@@ -4,7 +4,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { ThemeToggle } from './ThemeToggle';
 import { supabase } from '../lib/supabase';
-import { Nav, Page } from './Nav';
+import { Page } from './Nav';
 import { cn } from '../lib/utils';
 
 interface HeaderProps {
@@ -48,11 +48,32 @@ const TargetIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
+const PieChartIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+  </svg>
+);
+
+const ChartIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+  </svg>
+);
+
+const WalletIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+  </svg>
+);
+
 const navItems: { page: Page; label: string; icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
   { page: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
+  { page: 'expenses', label: 'Expenses', icon: WalletIcon },
   { page: 'fixedExpenses', label: 'Fixed Expenses', icon: ReceiptIcon },
+  { page: 'budgets', label: 'Budgets', icon: PieChartIcon },
   { page: 'debts', label: 'Debts', icon: CreditCardIcon },
   { page: 'savings', label: 'Savings', icon: TargetIcon },
+  { page: 'reports', label: 'Reports', icon: ChartIcon },
 ];
 
 export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, setCurrentPage, onMenuOpenChange }) => {
@@ -128,17 +149,39 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
   );
 
+  // Get page title
+  const getPageTitle = (page: Page): string => {
+    const titles: Record<Page, string> = {
+      dashboard: 'Dashboard',
+      expenses: 'Expenses',
+      fixedExpenses: 'Fixed Expenses',
+      budgets: 'Budgets',
+      debts: 'Debts',
+      savings: 'Savings',
+      reports: 'Reports'
+    };
+    return titles[page];
+  };
+
   return (
     <>
       <header className="bg-card border-b sticky top-0 z-40">
-        <div className="container mx-auto p-4 flex justify-between items-center">
-          <div className="flex items-center gap-4 md:gap-8">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight">Salary Tracker</h1>
-            <div className="hidden md:flex">
-                <Nav currentPage={currentPage} setCurrentPage={setCurrentPage} />
-            </div>
+        <div className="px-4 md:px-6 py-3 flex justify-between items-center">
+          {/* Mobile: App name + Menu button */}
+          <div className="flex items-center gap-3 md:hidden">
+            <Button onClick={() => setMenuOpen(true)} variant="ghost" size="icon" className="h-9 w-9">
+              <MenuIcon className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold">{getPageTitle(currentPage)}</h1>
           </div>
-          <div className="hidden md:flex items-center space-x-2">
+
+          {/* Desktop: Page title */}
+          <div className="hidden md:block">
+            <h1 className="text-xl font-semibold">{getPageTitle(currentPage)}</h1>
+          </div>
+
+          {/* Desktop: Actions */}
+          <div className="hidden md:flex items-center space-x-3">
             {isEditing ? (
               <>
                 <Input
@@ -155,18 +198,18 @@ export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, 
             ) : (
                currentPage === 'dashboard' && (
                 <>
-                  <span className="text-sm font-medium text-muted-foreground hidden lg:inline">Salary: {formatCurrency(salary)}</span>
+                  <span className="text-sm font-medium text-muted-foreground">Salary: {formatCurrency(salary)}</span>
                   <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">Edit</Button>
                 </>
               )
             )}
-            <Button onClick={handleSignOut} variant="ghost" size="sm">Sign Out</Button>
             <ThemeToggle />
+            <Button onClick={handleSignOut} variant="ghost" size="sm">Sign Out</Button>
           </div>
+
+          {/* Mobile: Theme toggle only */}
           <div className="md:hidden">
-              <Button onClick={() => setMenuOpen(true)} variant="ghost" size="icon">
-                  <MenuIcon className="h-6 w-6" />
-              </Button>
+            <ThemeToggle />
           </div>
         </div>
       </header>

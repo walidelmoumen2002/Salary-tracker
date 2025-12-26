@@ -52,6 +52,12 @@ const ListIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
+const PencilIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
+  </svg>
+);
+
 interface DebtManagerProps {
   initialDebts: Debt[];
   user: User | null;
@@ -98,13 +104,24 @@ const getCategoryColor = (category: DebtCategory) => {
 export const DebtManager: React.FC<DebtManagerProps> = ({ initialDebts, user }) => {
   const [debts, setDebts] = useState<Debt[]>(initialDebts);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
+  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form state
+  // Form state for adding new debt
   const [formData, setFormData] = useState({
+    name: '',
+    total_amount: '',
+    current_balance: '',
+    due_date: '',
+    category: 'credit_card' as DebtCategory
+  });
+
+  // Form state for editing debt
+  const [editFormData, setEditFormData] = useState({
     name: '',
     total_amount: '',
     current_balance: '',
@@ -209,6 +226,51 @@ export const DebtManager: React.FC<DebtManagerProps> = ({ initialDebts, user }) 
       setDebts(prev => prev.filter(d => d.id !== id));
     } catch (err) {
       handleError(err);
+    }
+  };
+
+  const openEditModal = (debt: Debt) => {
+    setEditingDebt(debt);
+    setEditFormData({
+      name: debt.name,
+      total_amount: debt.total_amount.toString(),
+      current_balance: debt.current_balance.toString(),
+      due_date: debt.due_date.toString(),
+      category: debt.category
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const updateDebt = async () => {
+    if (!editingDebt || !editFormData.name.trim() || !editFormData.total_amount) return;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const updatedDebt = {
+        name: editFormData.name.trim(),
+        total_amount: parseFloat(editFormData.total_amount),
+        current_balance: parseFloat(editFormData.current_balance) || 0,
+        due_date: parseInt(editFormData.due_date) || 1,
+        category: editFormData.category
+      };
+
+      const { error } = await supabase
+        .from('debts')
+        .update(updatedDebt)
+        .eq('id', editingDebt.id);
+
+      if (error) throw error;
+
+      setDebts(prev => prev.map(d =>
+        d.id === editingDebt.id ? { ...d, ...updatedDebt } : d
+      ));
+      setIsEditModalOpen(false);
+      setEditingDebt(null);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -317,16 +379,28 @@ export const DebtManager: React.FC<DebtManagerProps> = ({ initialDebts, user }) 
                               {DEBT_CATEGORIES.find(c => c.value === debt.category)?.label}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <p className={`font-bold text-sm sm:text-base ${isPaidOff ? 'text-emerald-600' : 'text-red-600 dark:text-red-400'}`}>
-                              {isPaidOff ? 'Paid Off!' : formatCurrency(debt.current_balance)}
-                            </p>
-                            {!isPaidOff && (
-                              <p className="text-xs text-muted-foreground">
-                                of {formatCurrency(debt.total_amount)}
+                          {isPaidOff ? (
+                            <div className="text-right">
+                              <p className="font-bold text-sm sm:text-base text-emerald-600 dark:text-emerald-400">
+                                Paid Off!
                               </p>
-                            )}
-                          </div>
+                              <p className="text-xs text-muted-foreground">
+                                {formatCurrency(debt.total_amount)} total
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="text-right space-y-0.5">
+                              <p className="font-bold text-sm sm:text-base text-red-600 dark:text-red-400">
+                                {formatCurrency(debt.current_balance)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                remaining of {formatCurrency(debt.total_amount)}
+                              </p>
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                                {formatCurrency(debt.total_amount - debt.current_balance)} paid
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         {/* Progress Bar */}
@@ -358,6 +432,14 @@ export const DebtManager: React.FC<DebtManagerProps> = ({ initialDebts, user }) 
                               Pay
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => openEditModal(debt)}
+                          >
+                            <PencilIcon className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -490,6 +572,84 @@ export const DebtManager: React.FC<DebtManagerProps> = ({ initialDebts, user }) 
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Debt Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Debt</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Name</label>
+              <Input
+                placeholder="e.g., Bank Loan, Credit Card"
+                value={editFormData.name}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">Category</label>
+              <Select
+                value={editFormData.category}
+                onValueChange={(value) => setEditFormData(prev => ({ ...prev, category: value as DebtCategory }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEBT_CATEGORIES.map(cat => (
+                    <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Total Amount</label>
+                <Input
+                  type="number"
+                  placeholder="10000"
+                  value={editFormData.total_amount}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, total_amount: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Current Balance</label>
+                <Input
+                  type="number"
+                  placeholder="8500"
+                  value={editFormData.current_balance}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, current_balance: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">Due Date (Day of Month)</label>
+              <Input
+                type="number"
+                min="1"
+                max="31"
+                placeholder="15"
+                value={editFormData.due_date}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, due_date: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setIsEditModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={updateDebt} disabled={isLoading}>
+                {isLoading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

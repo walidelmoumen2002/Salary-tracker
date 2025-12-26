@@ -118,3 +118,32 @@ export const INCOME_TYPES: { value: IncomeType; label: string }[] = [
   { value: 'bonus', label: 'Bonus' },
   { value: 'other', label: 'Other' },
 ];
+
+// Category Budget Types
+export interface CategoryBudget {
+  id: string;
+  category: string;
+  budget_amount: number;
+  user_id: string;
+}
+
+// Recurring Expense Types
+export interface RecurringExpense {
+  id: string;
+  description: string;
+  amount: number;
+  category: Category;
+  frequency: RecurringFrequency;
+  next_date: string;
+  is_active: boolean;
+  user_id?: string;
+}
+
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+export const RECURRING_FREQUENCIES: { value: RecurringFrequency; label: string }[] = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'yearly', label: 'Yearly' },
+];
