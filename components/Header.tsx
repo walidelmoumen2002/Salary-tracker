@@ -1,292 +1,235 @@
-import React, { useEffect, useState } from 'react';
-import { formatCurrency } from '../lib/utils';
-import { Input } from './ui/Input';
-import { Button } from './ui/Button';
-import { ThemeToggle } from './ThemeToggle';
-import { supabase } from '../lib/supabase';
+import React, { useState } from 'react';
 import { Page } from './Nav';
-import { cn } from '../lib/utils';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 interface HeaderProps {
-  salary: number;
-  setSalary: (salary: number) => void;
   currentPage: Page;
   setCurrentPage: (page: Page) => void;
-  onMenuOpenChange?: (open: boolean) => void;
+  onAdd?: () => void;
+  user?: User | null;
+  salary?: number;
+  setSalary?: (s: number) => void;
 }
 
-const MenuIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-);
-
-const XIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-);
-
-// Navigation Icons for Mobile Menu
-const DashboardIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+const MenuIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M3 6h18M3 12h18M3 18h18"/>
   </svg>
 );
 
-const ReceiptIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>
+const BellIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>
   </svg>
 );
 
-const CreditCardIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+const PlusIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M12 5v14M5 12h14"/>
   </svg>
 );
 
-const TargetIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+const XIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M18 6 6 18M6 6l12 12"/>
   </svg>
 );
 
-const PieChartIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+const WalletIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6"/><path d="M16 12h.01"/>
   </svg>
 );
 
-const ChartIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-  </svg>
-);
-
-const WalletIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
-  </svg>
-);
-
-const navItems: { page: Page; label: string; icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
-  { page: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
-  { page: 'expenses', label: 'Expenses', icon: WalletIcon },
-  { page: 'fixedExpenses', label: 'Fixed Expenses', icon: ReceiptIcon },
-  { page: 'budgets', label: 'Budgets', icon: PieChartIcon },
-  { page: 'debts', label: 'Debts', icon: CreditCardIcon },
-  { page: 'savings', label: 'Savings', icon: TargetIcon },
-  { page: 'reports', label: 'Reports', icon: ChartIcon },
+const navItems = [
+  { page: 'dashboard'     as Page, label: 'Dashboard'     },
+  { page: 'expenses'      as Page, label: 'Expenses'       },
+  { page: 'fixedExpenses' as Page, label: 'Fixed Expenses' },
+  { page: 'budgets'       as Page, label: 'Budgets'        },
+  { page: 'debts'         as Page, label: 'Debts'          },
+  { page: 'savings'       as Page, label: 'Savings'        },
+  { page: 'reports'       as Page, label: 'Reports'        },
 ];
 
-export const Header: React.FC<HeaderProps> = ({ salary, setSalary, currentPage, setCurrentPage, onMenuOpenChange }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newSalary, setNewSalary] = useState(salary.toString());
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isMenuClosing, setIsMenuClosing] = useState(false);
-  const [isMenuAnimating, setIsMenuAnimating] = useState(false);
+const PAGE_META: Record<Page, { title: string; sub: string }> = {
+  dashboard:     { title: 'Dashboard',      sub: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + ' overview' },
+  expenses:      { title: 'Expenses',        sub: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) },
+  fixedExpenses: { title: 'Fixed Expenses', sub: 'Recurring monthly' },
+  budgets:       { title: 'Budgets',         sub: 'Category limits' },
+  debts:         { title: 'Debts',           sub: 'Balances & payoff' },
+  savings:       { title: 'Savings',         sub: 'Goals & progress' },
+  reports:       { title: 'Reports',         sub: 'History & trends' },
+};
 
-  const setMenuOpen = (open: boolean) => {
-    if (open) {
-      setIsMenuOpen(true);
-      setIsMenuClosing(false);
-      onMenuOpenChange?.(true);
-      // Trigger animation after mount
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsMenuAnimating(true);
-        });
-      });
-    } else {
-      setIsMenuClosing(true);
-      setIsMenuAnimating(false);
-      setTimeout(() => {
-        setIsMenuOpen(false);
-        setIsMenuClosing(false);
-        onMenuOpenChange?.(false);
-      }, 300);
-    }
-  };
+function getInitials(user?: User | null): string {
+  if (!user?.email) return 'ME';
+  const name = user.email.split('@')[0];
+  return name.substring(0, 2).toUpperCase();
+}
 
-  // Prevent background scroll when mobile menu is open
-  useEffect(() => {
-    if (isMenuOpen && !isMenuClosing) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.top = `-${window.scrollY}px`;
-    } else if (!isMenuOpen) {
-      const scrollY = document.body.style.top;
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
-    }
-  }, [isMenuOpen, isMenuClosing]);
+export const Header: React.FC<HeaderProps> = ({ currentPage, setCurrentPage, onAdd, user, salary, setSalary }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editingSalary, setEditingSalary] = useState(false);
+  const [salaryInput, setSalaryInput] = useState(String(salary ?? ''));
 
-  const handleSave = () => {
-    const salaryValue = parseFloat(newSalary);
-    if (!isNaN(salaryValue) && salaryValue >= 0) {
-      setSalary(salaryValue);
-      setIsEditing(false);
-    }
-  };
+  const meta = PAGE_META[currentPage] || PAGE_META.dashboard;
+  const initials = getInitials(user);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSave();
-    }
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  }
-
-  const mobileNavItemClasses = (page: Page) => cn(
-    "cursor-pointer text-base font-medium transition-colors w-full p-3 rounded-lg flex items-center gap-3",
-    currentPage === page
-      ? "bg-primary text-primary-foreground"
-      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-  );
-
-  // Get page title
-  const getPageTitle = (page: Page): string => {
-    const titles: Record<Page, string> = {
-      dashboard: 'Dashboard',
-      expenses: 'Expenses',
-      fixedExpenses: 'Fixed Expenses',
-      budgets: 'Budgets',
-      debts: 'Debts',
-      savings: 'Savings',
-      reports: 'Reports'
-    };
-    return titles[page];
+  const saveSalary = () => {
+    const v = parseFloat(salaryInput);
+    if (!isNaN(v) && v >= 0 && setSalary) setSalary(v);
+    setEditingSalary(false);
   };
 
   return (
     <>
-      <header className="bg-card border-b sticky top-0 z-40">
-        <div className="px-4 md:px-6 py-3 flex justify-between items-center">
-          {/* Mobile: App name + Menu button */}
-          <div className="flex items-center gap-3 md:hidden">
-            <Button onClick={() => setMenuOpen(true)} variant="ghost" size="icon" className="h-9 w-9">
-              <MenuIcon className="h-5 w-5" />
-            </Button>
-            <h1 className="text-lg font-semibold">{getPageTitle(currentPage)}</h1>
+      <header
+        className="sticky top-0 z-20 border-b"
+        style={{ background: 'color-mix(in oklab, var(--paper) 85%, transparent)', backdropFilter: 'blur(8px)', borderColor: 'var(--line)' }}
+      >
+        <div className="flex items-center gap-4 px-5 md:px-9" style={{ height: '68px' }}>
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="md:hidden focus-ring text-ink -ml-1"
+            aria-label="Open menu"
+          >
+            <MenuIcon />
+          </button>
+
+          {/* Title */}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg md:text-xl font-bold tracking-tight leading-none truncate text-ink">{meta.title}</h1>
+            <p className="eyebrow mt-1.5 hidden sm:block">{meta.sub}</p>
           </div>
 
-          {/* Desktop: Page title */}
-          <div className="hidden md:block">
-            <h1 className="text-xl font-semibold">{getPageTitle(currentPage)}</h1>
-          </div>
+          {/* Bell */}
+          <button
+            className="focus-ring relative h-9 w-9 border flex items-center justify-center text-muted-foreground hover:text-ink hover:bg-paper transition-colors"
+            style={{ borderColor: 'var(--line)', borderRadius: 'var(--radius)' }}
+            aria-label="Notifications"
+          >
+            <BellIcon />
+            <span className="absolute top-2 right-2 h-1.5 w-1.5" style={{ background: 'var(--accent-color)', borderRadius: '99px' }} />
+          </button>
 
-          {/* Desktop: Actions */}
-          <div className="hidden md:flex items-center space-x-3">
-            {isEditing ? (
-              <>
-                <Input
-                  type="number"
-                  value={newSalary}
-                  onChange={(e) => setNewSalary(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-32"
-                  placeholder="Monthly Salary"
-                />
-                <Button onClick={handleSave} size="sm">Save</Button>
-                <Button onClick={() => setIsEditing(false)} variant="ghost" size="sm">Cancel</Button>
-              </>
-            ) : (
-               currentPage === 'dashboard' && (
-                <>
-                  <span className="text-sm font-medium text-muted-foreground">Salary: {formatCurrency(salary)}</span>
-                  <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">Edit</Button>
-                </>
-              )
-            )}
-            <ThemeToggle />
-            <Button onClick={handleSignOut} variant="ghost" size="sm">Sign Out</Button>
-          </div>
+          {/* Add expense button — desktop only */}
+          {onAdd && (
+            <button
+              onClick={onAdd}
+              className="focus-ring hidden md:inline-flex items-center gap-2 h-9 pl-3 pr-4 text-sm font-semibold text-white transition-transform active:scale-[0.97]"
+              style={{ background: 'var(--accent-color)', borderRadius: 'var(--radius)' }}
+            >
+              <PlusIcon /> Add expense
+            </button>
+          )}
 
-          {/* Mobile: Theme toggle only */}
-          <div className="md:hidden">
-            <ThemeToggle />
+          {/* User avatar */}
+          <div
+            className="h-9 w-9 flex items-center justify-center text-xs font-bold flex-shrink-0 text-white"
+            style={{ background: 'var(--ink)', borderRadius: 'var(--radius)', fontSize: '0.78rem' }}
+          >
+            {initials}
           </div>
         </div>
       </header>
 
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div
-          className={cn(
-            "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden overflow-hidden transition-opacity duration-300",
-            isMenuAnimating && !isMenuClosing ? "opacity-100" : "opacity-0"
-          )}
-          onClick={() => setMenuOpen(false)}
-        >
-            <div
-              className={cn(
-                "absolute top-0 right-0 bottom-0 h-full w-full max-w-sm bg-card border-l p-4 flex flex-col overflow-y-auto transition-transform duration-300",
-                isMenuAnimating && !isMenuClosing ? "translate-x-0" : "translate-x-full"
-              )}
-              onClick={e => e.stopPropagation()}
-            >
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Menu</h2>
-                    <Button onClick={() => setMenuOpen(false)} variant="ghost" size="icon">
-                        <XIcon className="h-6 w-6" />
-                    </Button>
+      {/* Mobile slide-in menu */}
+      {menuOpen && (
+        <div className="md:hidden fixed inset-0 z-50" role="dialog" aria-modal="true">
+          <div
+            className="absolute inset-0 overlay-in"
+            style={{ background: 'color-mix(in oklab, var(--ink) 30%, transparent)', backdropFilter: 'blur(2px)' }}
+            onClick={() => setMenuOpen(false)}
+          />
+          <div
+            className="absolute left-0 top-0 bottom-0 w-[260px] slide-right flex flex-col"
+            style={{ background: 'var(--surface)', borderRight: '1px solid var(--line)' }}
+          >
+            {/* Menu header */}
+            <div className="h-[60px] flex items-center justify-between px-4 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 flex items-center justify-center text-white" style={{ background: 'var(--accent-color)' }}>
+                  <WalletIcon />
                 </div>
-
-                <nav className="flex flex-col space-y-1 mb-6">
-                    {navItems.map(({ page, label, icon: Icon }) => (
-                      <a
-                        key={page}
-                        onClick={() => { setCurrentPage(page); setMenuOpen(false); }}
-                        className={mobileNavItemClasses(page)}
-                      >
-                        <Icon className="h-5 w-5" />
-                        {label}
-                      </a>
-                    ))}
-                </nav>
-
-                <div className="mt-auto space-y-4 border-t pt-4 pb-20">
-                    {currentPage === 'dashboard' && (
-                        <div className="space-y-2">
-                            <h3 className="text-sm font-medium text-muted-foreground px-1">Monthly Salary</h3>
-                            {isEditing ? (
-                                <div className='space-y-2'>
-                                  <Input
-                                    type="number"
-                                    value={newSalary}
-                                    onChange={(e) => setNewSalary(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    placeholder="Monthly Salary"
-                                  />
-                                  <div className='flex gap-2'>
-                                      <Button onClick={handleSave} size="sm" className="flex-1">Save</Button>
-                                      <Button onClick={() => setIsEditing(false)} variant="ghost" size="sm" className="flex-1">Cancel</Button>
-                                  </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-                                    <span className="font-semibold">{formatCurrency(salary)}</span>
-                                    <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">Edit</Button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-                        <span className="text-sm font-medium">Theme</span>
-                        <ThemeToggle />
-                    </div>
-
-                    <Button onClick={handleSignOut} variant="outline" className="w-full">Sign Out</Button>
-                </div>
+                <p className="font-bold text-ink tracking-tight">Ledger</p>
+              </div>
+              <button onClick={() => setMenuOpen(false)} className="focus-ring text-muted-foreground hover:text-ink">
+                <XIcon />
+              </button>
             </div>
+
+            {/* Nav items */}
+            <nav className="flex-1 p-3 overflow-y-auto">
+              {navItems.map(({ page, label }) => {
+                const active = currentPage === page;
+                return (
+                  <button
+                    key={page}
+                    onClick={() => { setCurrentPage(page); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-3 text-sm font-medium transition-colors text-left"
+                    style={{
+                      borderRadius: 'var(--radius)',
+                      color: active ? 'var(--ink)' : undefined,
+                      background: active ? 'var(--accent-soft)' : undefined,
+                    }}
+                  >
+                    <span className={active ? '' : 'text-muted-foreground'}>{label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Salary edit + sign out */}
+            <div className="p-4 border-t space-y-3" style={{ borderColor: 'var(--line)' }}>
+              {setSalary && (
+                <div>
+                  <p className="eyebrow mb-2">Monthly salary</p>
+                  {editingSalary ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={salaryInput}
+                        onChange={e => setSalaryInput(e.target.value)}
+                        className="flex-1 h-9 px-3 text-sm border bg-paper text-ink num"
+                        style={{ borderColor: 'var(--line)', borderRadius: 'var(--radius)' }}
+                        autoFocus
+                        onKeyDown={e => e.key === 'Enter' && saveSalary()}
+                      />
+                      <button
+                        onClick={saveSalary}
+                        className="h-9 px-4 text-sm font-semibold text-white"
+                        style={{ background: 'var(--accent-color)', borderRadius: 'var(--radius)' }}
+                      >
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setSalaryInput(String(salary ?? '')); setEditingSalary(true); }}
+                      className="w-full flex items-center justify-between px-3 py-2.5 border text-sm"
+                      style={{ borderColor: 'var(--line)', borderRadius: 'var(--radius)', background: 'var(--paper)' }}
+                    >
+                      <span className="num font-semibold text-ink">{salary?.toLocaleString('en-US', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 })}</span>
+                      <span className="text-xs text-muted-foreground">Edit</span>
+                    </button>
+                  )}
+                </div>
+              )}
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="w-full h-9 text-sm font-medium border text-muted-foreground transition-colors"
+                style={{ borderColor: 'var(--line)', borderRadius: 'var(--radius)' }}
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
   );
 };
+
+export default Header;
