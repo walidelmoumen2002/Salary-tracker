@@ -46,6 +46,12 @@ const PiggyIcon = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const HistoryIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3.5 2"/>
+  </svg>
+);
+
 const BarsIcon = (p: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
     <path d="M6 20V10M12 20V4M18 20v-6"/>
@@ -68,6 +74,7 @@ const LogoutIcon = (p: React.SVGProps<SVGSVGElement>) => (
 const NAV = [
   { page: 'dashboard'     as Page, label: 'Dashboard',      Icon: DashboardIcon },
   { page: 'expenses'      as Page, label: 'Expenses',        Icon: WalletIcon    },
+  { page: 'history'       as Page, label: 'History',         Icon: HistoryIcon   },
   { page: 'fixedExpenses' as Page, label: 'Fixed',           Icon: CalendarIcon  },
   { page: 'budgets'       as Page, label: 'Budgets',         Icon: PieIcon       },
   { page: 'debts'         as Page, label: 'Debts',           Icon: CardIcon      },

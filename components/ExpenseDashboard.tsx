@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/Select';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, currentMonthKey, formatMonthLabel } from '../lib/utils';
 
 interface ExpenseDashboardProps {
   expenses: Expense[];
@@ -14,6 +14,7 @@ interface ExpenseDashboardProps {
 
 const getMonthsWithExpenses = (expenses: Expense[]): string[] => {
   const monthSet = new Set<string>();
+  monthSet.add(currentMonthKey()); // always offer the running month, even before its first expense
   expenses.forEach(expense => {
     monthSet.add(expense.date.substring(0, 7)); // YYYY-MM
   });
@@ -22,8 +23,10 @@ const getMonthsWithExpenses = (expenses: Expense[]): string[] => {
 
 export const ExpenseDashboard: React.FC<ExpenseDashboardProps> = ({ expenses, deleteExpense, categories }) => {
   const availableMonths = useMemo(() => getMonthsWithExpenses(expenses), [expenses]);
-  
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
+  // Opens on the running month, so the list starts over with each new month.
+  // Older months stay one click away here, and in full under History.
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
 
@@ -32,7 +35,7 @@ export const ExpenseDashboard: React.FC<ExpenseDashboardProps> = ({ expenses, de
   };
 
   const clearFilters = () => {
-    setSelectedMonth('all');
+    setSelectedMonth(currentMonthKey());
     setSelectedCategory('all');
     setDateRange({ from: '', to: '' });
   };
@@ -48,12 +51,14 @@ export const ExpenseDashboard: React.FC<ExpenseDashboardProps> = ({ expenses, de
     });
   }, [expenses, selectedMonth, selectedCategory, dateRange]);
 
-  const hasActiveFilters = selectedMonth !== 'all' || selectedCategory !== 'all' || !!dateRange.from || !!dateRange.to;
+  const hasActiveFilters = selectedMonth !== currentMonthKey() || selectedCategory !== 'all' || !!dateRange.from || !!dateRange.to;
 
   return (
     <Card>
       <CardHeader className="p-4 sm:p-6">
-        <CardTitle className="text-base sm:text-lg">Expenses Overview</CardTitle>
+        <CardTitle className="text-base sm:text-lg">
+          {selectedMonth === 'all' ? 'All Expenses' : `Expenses · ${formatMonthLabel(selectedMonth)}`}
+        </CardTitle>
         <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4">
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 items-end">
 
@@ -100,7 +105,7 @@ export const ExpenseDashboard: React.FC<ExpenseDashboardProps> = ({ expenses, de
             </div>
 
             <Button onClick={clearFilters} variant="outline" disabled={!hasActiveFilters} className="col-span-2 lg:col-span-1 h-9 sm:h-10 text-xs sm:text-sm">
-              Clear Filters
+              Back to This Month
             </Button>
           </div>
         </div>
@@ -117,7 +122,9 @@ export const ExpenseDashboard: React.FC<ExpenseDashboardProps> = ({ expenses, de
             </div>
             <h3 className="text-base sm:text-lg font-semibold">No expenses found</h3>
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-              {hasActiveFilters ? 'Try adjusting your filters' : 'Click the + button to add your first expense'}
+              {hasActiveFilters
+                ? 'Try adjusting your filters'
+                : `Nothing logged for ${formatMonthLabel(selectedMonth)} yet — tap + to add one`}
             </p>
           </div>
         ) : (

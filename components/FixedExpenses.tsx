@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
-import { formatCurrency, getErrorMessage } from '../lib/utils';
+import { formatCurrency, getErrorMessage, currentMonthKey, formatMonthLabel } from '../lib/utils';
 import type { User } from '@supabase/supabase-js';
 
 const TrashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -49,6 +49,47 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
     useEffect(() => {
         setFixedExpenses(initialFixedExpenses);
     }, [initialFixedExpenses]);
+
+    // Bills are paid again every month, so every "paid" tick is cleared the
+    // first time the app is opened in a new month. The month we last cleared
+    // for is remembered per user.
+    useEffect(() => {
+        if (!user || fixedExpenses.length === 0) return;
+
+        const storageKey = `fixed-expenses-cleared-month:${user.id}`;
+        const thisMonth = currentMonthKey();
+
+        let clearedMonth: string | null = null;
+        try { clearedMonth = window.localStorage.getItem(storageKey); } catch { /* storage unavailable */ }
+        if (clearedMonth === thisMonth) return;
+
+        const stamp = () => {
+            try { window.localStorage.setItem(storageKey, thisMonth); } catch { /* storage unavailable */ }
+        };
+
+        // First run on this device: adopt the current month without touching data.
+        const completedIds = fixedExpenses.filter(e => e.is_completed).map(e => e.id);
+        if (!clearedMonth || completedIds.length === 0) {
+            stamp();
+            return;
+        }
+
+        (async () => {
+            try {
+                const { error } = await supabase
+                    .from('fixed_expenses')
+                    .update({ is_completed: false })
+                    .eq('user_id', user.id)
+                    .in('id', completedIds);
+
+                if (error) throw error;
+                setFixedExpenses(prev => prev.map(task => ({ ...task, is_completed: false })));
+                stamp();
+            } catch (err) {
+                handleError(err);
+            }
+        })();
+    }, [user, fixedExpenses]);
 
     const { totalAmount, paidAmount } = useMemo(() => {
         const total = fixedExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
@@ -180,7 +221,10 @@ export const FixedExpenses: React.FC<FixedExpensesProps> = ({ initialFixedExpens
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                     <div>
                         <CardTitle className="text-lg sm:text-xl">Fixed Monthly Expenses</CardTitle>
-                        <p className="text-muted-foreground text-xs sm:text-sm pt-1">Track your recurring bills and subscriptions.</p>
+                        <p className="text-muted-foreground text-xs sm:text-sm pt-1">
+                            Track your recurring bills and subscriptions. Paid ticks clear automatically each new month
+                            (currently {formatMonthLabel(currentMonthKey())}).
+                        </p>
                     </div>
                     <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-0 bg-muted/50 sm:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none">
                         <div className="sm:text-right">

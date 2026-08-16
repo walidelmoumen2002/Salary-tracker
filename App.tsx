@@ -17,7 +17,8 @@ import { MobileNav, Page } from './components/Nav';
 import { Sidebar } from './components/Sidebar';
 import { BudgetManager } from './components/BudgetManager';
 import { MonthlyReport } from './components/MonthlyReport';
-import { formatCurrency, getErrorMessage } from './lib/utils';
+import { History } from './components/History';
+import { formatCurrency, getErrorMessage, currentMonthKey, formatMonthLabel, nextMonthStartLabel } from './lib/utils';
 
 // ── Trend chart (cumulative spend for the current month) ────────────────────
 function TrendChart({ expenses, salary }: { expenses: Expense[]; salary: number }) {
@@ -202,6 +203,19 @@ const App: React.FC = () => {
   const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [globalError, setGlobalError] = useState<string | null>(null);
+  // The month the dashboard is reporting on. Rolls over on its own so a session
+  // left open across the 1st starts the new month from zero.
+  const [activeMonth, setActiveMonth] = useState<string>(currentMonthKey);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActiveMonth(prev => {
+        const now = currentMonthKey();
+        return now === prev ? prev : now;
+      });
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleGlobalError = useCallback((error: any) => {
     console.error('Global Error:', error);
@@ -313,9 +327,15 @@ const App: React.FC = () => {
     } catch (error) { handleGlobalError(error); }
   }, [user, handleGlobalError]);
 
-  const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
+  // Everything on the dashboard is scoped to the active month, so the totals
+  // start over each time a new month begins. Nothing is deleted — past months
+  // stay readable under History.
+  const monthExpenses = useMemo(() => expenses.filter(e => e.date.startsWith(activeMonth)), [expenses, activeMonth]);
+  const totalExpenses = useMemo(() => monthExpenses.reduce((s, e) => s + e.amount, 0), [monthExpenses]);
   const remainingBalance = useMemo(() => salary - totalExpenses, [salary, totalExpenses]);
-  const recentExpenses = useMemo(() => [...expenses].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).slice(0, 5), [expenses]);
+  const recentExpenses = useMemo(() => [...monthExpenses].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).slice(0, 5), [monthExpenses]);
+  const monthLabel = useMemo(() => formatMonthLabel(activeMonth, false), [activeMonth]);
+  const resetsOn = useMemo(() => nextMonthStartLabel(activeMonth), [activeMonth]);
 
   if (loading) {
     return (
@@ -372,6 +392,9 @@ const App: React.FC = () => {
                   setSalary={updateSalary}
                   totalExpenses={totalExpenses}
                   remainingBalance={remainingBalance}
+                  monthLabel={monthLabel}
+                  resetsOn={resetsOn}
+                  onViewHistory={() => setCurrentPage('history')}
                 />
 
                 {/* Trend + Budget meter */}
@@ -387,7 +410,7 @@ const App: React.FC = () => {
                         <p className="font-mono text-[0.7rem] text-muted-foreground mt-1">of {formatCurrency(salary)}</p>
                       </div>
                     </div>
-                    <TrendChart expenses={expenses} salary={salary} />
+                    <TrendChart expenses={monthExpenses} salary={salary} />
                   </Card>
 
                   <Card className="p-5 sm:p-6">
@@ -431,10 +454,10 @@ const App: React.FC = () => {
                     <div className="flex items-center justify-between mb-5">
                       <div>
                         <p className="eyebrow">Where it went</p>
-                        <p className="text-base font-bold mt-1 text-ink">By category</p>
+                        <p className="text-base font-bold mt-1 text-ink">By category · {monthLabel}</p>
                       </div>
                     </div>
-                    <CategoryBreakdown expenses={expenses} />
+                    <CategoryBreakdown expenses={monthExpenses} />
                   </Card>
 
                   <Card className="lg:col-span-2 p-5 sm:p-6">
@@ -455,7 +478,9 @@ const App: React.FC = () => {
                       </button>
                     </div>
                     {recentExpenses.length === 0 ? (
-                      <div className="py-12 text-center text-sm text-muted-foreground">No expenses yet</div>
+                      <div className="py-12 text-center text-sm text-muted-foreground">
+                        Nothing logged in {monthLabel} yet
+                      </div>
                     ) : (
                       <div className="divide-y" style={{ borderColor: 'color-mix(in oklab, var(--line) 70%, transparent)' }}>
                         {recentExpenses.map(e => <RecentRow key={e.id} exp={e} onDelete={deleteExpense} />)}
@@ -477,6 +502,7 @@ const App: React.FC = () => {
             {currentPage === 'savings' && <SavingsGoals initialGoals={savingsGoals} user={user} monthlyIncome={salary} />}
             {currentPage === 'budgets' && <BudgetManager expenses={expenses} user={user} salary={salary} />}
             {currentPage === 'reports' && <MonthlyReport expenses={expenses} salary={salary} />}
+            {currentPage === 'history' && <History expenses={expenses} salary={salary} />}
           </main>
         </div>
 

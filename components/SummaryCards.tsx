@@ -6,6 +6,11 @@ interface SummaryCardsProps {
   setSalary?: (s: number) => void;
   totalExpenses: number;
   remainingBalance: number;
+  /** Month these totals cover, e.g. "August". */
+  monthLabel?: string;
+  /** Day the counters start over, e.g. "September 1". */
+  resetsOn?: string;
+  onViewHistory?: () => void;
 }
 
 const ArrowUpIcon = (p: React.SVGProps<SVGSVGElement>) => (
@@ -21,7 +26,7 @@ const ArrowDownIcon = (p: React.SVGProps<SVGSVGElement>) => (
 );
 
 export const SummaryCards: React.FC<SummaryCardsProps> = ({
-  salary, setSalary, totalExpenses, remainingBalance,
+  salary, setSalary, totalExpenses, remainingBalance, monthLabel, resetsOn, onViewHistory,
 }) => {
   const [editingSalary, setEditingSalary] = useState(false);
   const [salaryInput, setSalaryInput] = useState(String(salary));
@@ -103,14 +108,17 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 
         {/* Spent */}
         <Card>
-          <p className="eyebrow">Spent so far</p>
+          <p className="eyebrow">Spent so far{monthLabel ? ` · ${monthLabel}` : ''}</p>
           <p className="num text-[2rem] font-bold tracking-tight mt-2 leading-none text-ink">
             {formatCurrency(totalExpenses)}
           </p>
-          <div className="mt-2.5">
+          <div className="mt-2.5 flex items-center gap-2 flex-wrap">
             <span className="font-mono text-[0.72rem] text-muted-foreground">
               {pct.toFixed(0)}% of income
             </span>
+            {resetsOn && (
+              <span className="font-mono text-[0.68rem] text-muted-foreground">· resets {resetsOn}</span>
+            )}
           </div>
         </Card>
 
@@ -135,7 +143,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
       >
         <div className="flex items-end justify-between mb-3">
           <div>
-            <p className="eyebrow">Spent this month</p>
+            <p className="eyebrow">Spent in {monthLabel || 'this month'}</p>
             <p className="num text-2xl font-bold mt-1 text-ink">
               {formatCurrency(totalExpenses)}
               <span className="text-sm font-medium text-muted-foreground"> / {formatCurrency(salary)}</span>
@@ -154,13 +162,24 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
           />
         </div>
 
-        <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center justify-between mt-3 gap-3">
           <span className="font-mono text-[0.7rem] text-muted-foreground">
             {over ? 'Over pace — ease up' : near ? 'Approaching your limit' : 'On a comfortable pace'}
           </span>
-          <span className="font-mono text-[0.7rem] text-muted-foreground">
-            {formatCurrency(Math.max(salary - totalExpenses, 0))} left
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-[0.7rem] text-muted-foreground">
+              {formatCurrency(Math.max(salary - totalExpenses, 0))} left
+            </span>
+            {onViewHistory && (
+              <button
+                onClick={onViewHistory}
+                className="focus-ring font-mono text-[0.7rem] underline-offset-2 hover:underline"
+                style={{ color: 'var(--accent-color)' }}
+              >
+                History
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -45,6 +45,7 @@ const WalletIcon = (p: React.SVGProps<SVGSVGElement>) => (
 const navItems = [
   { page: 'dashboard'     as Page, label: 'Dashboard'     },
   { page: 'expenses'      as Page, label: 'Expenses'       },
+  { page: 'history'       as Page, label: 'History'        },
   { page: 'fixedExpenses' as Page, label: 'Fixed Expenses' },
   { page: 'budgets'       as Page, label: 'Budgets'        },
   { page: 'debts'         as Page, label: 'Debts'          },
@@ -55,6 +56,7 @@ const navItems = [
 const PAGE_META: Record<Page, { title: string; sub: string }> = {
   dashboard:     { title: 'Dashboard',      sub: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + ' overview' },
   expenses:      { title: 'Expenses',        sub: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) },
+  history:       { title: 'History',         sub: 'Previous months' },
   fixedExpenses: { title: 'Fixed Expenses', sub: 'Recurring monthly' },
   budgets:       { title: 'Budgets',         sub: 'Category limits' },
   debts:         { title: 'Debts',           sub: 'Balances & payoff' },
